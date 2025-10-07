@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tourist FAQ - Puerto Galera</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+</head>
+<body class="bg-gray-100">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <div id="sidebar" class="w-64 bg-blue-900 text-white p-5 space-y-6 fixed inset-y-0 left-0 transform -translate-x-full transition-all duration-300 ease-in-out md:relative md:translate-x-0 z-50">
+      <h2 class="text-2xl font-bold">GaleraGo</h2>
+      <nav class="space-y-2">
+        <a href="/user/home" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">Home</a>
+        <a href="/booking" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">Booking</a>
+        <a href="/island" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">Island</a>
+        <a href="/navigation" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">Navigation</a>
+        <a href="/UserFAQ" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">FAQ</a>
+        <a href="/logout" class="block py-3 px-4 bg-red-600 hover:bg-red-700 rounded-md text-center font-semibold">Logout</a>
+      </nav>
+    </div>
+
+    <!-- Content Area -->
+    <div class="flex-1 flex flex-col">
+      <!-- Navbar -->
+      <header class="bg-white shadow-md p-4 flex justify-between items-center">
+        <button id="menu-btn" class="md:hidden bg-blue-900 text-white px-3 py-2 rounded">☰</button>
+        <h1 class="text-2xl font-semibold text-blue-900">Tourist FAQ</h1>
+        <div class="user-info text-blue-900 font-medium">
+          <i class="fas fa-user-circle mr-2"></i>
+          <%= user.name || 'Guest' %>
+        </div>
+      </header>
+
+    <main class="p-6 space-y-6 text-gray-800">
+  <h2 class="text-2xl font-bold text-blue-900 mb-4">Frequently Asked Questions</h2>
+
+  <!-- GENERAL INFORMATION -->
+  <details class="bg-white p-4 rounded-lg shadow-lg open:bg-blue-50" open>
+    <summary class="text-xl font-semibold text-blue-900 cursor-pointer">General Information</summary>
+    <div class="mt-3 pl-4 space-y-3">
+      <p><strong> Where is Puerto Galera located?</strong><br>
+        Puerto Galera is located on the northwestern coast of Oriental Mindoro, about 130 km south of Manila.
+      </p>
+      <p><strong> How do I get to Puerto Galera from Manila?</strong><br>
+        Travelers usually take a bus or private car to Batangas Port (about 2–3 hours), then a RORO ferry or fastcraft to Puerto Galera (1–1.5 hours).
+      </p>
+      <p><strong> Is Puerto Galera safe for tourists?</strong><br>
+        Yes, Puerto Galera is generally safe for tourists. Standard safety precautions should still be observed, especially when swimming or hiking.
+      </p>
+    </div>
+  </details>
+
+  <!-- TRAVEL AND TRANSPORTATION -->
+  <details class="bg-white p-4 rounded-lg shadow-lg open:bg-teal-50">
+    <summary class="text-xl font-semibold text-blue-900 cursor-pointer">Travel and Transportation</summary>
+    <div class="mt-3 pl-4 space-y-3">
+      <p><strong> What is the best time to visit Puerto Galera?</strong><br>
+        The best time to visit is during the summer season, March until May when the weather is ideal for beach and diving activities. But generally, you will enjoy your Puerto Galera visit every time the weather is fair.
+      </p>
+      <p><strong> Are there ATMs and banks in Puerto Galera?</strong><br>
+        Yes, there are ATMs around, but it’s advisable to bring cash, especially when visiting more remote areas or smaller islands.
+      </p>
+    </div>
+  </details>
+
+  <!-- ATTRACTIONS AND ACTIVITIES -->
+  <details class="bg-white p-4 rounded-lg shadow-lg open:bg-green-50">
+    <summary class="text-xl font-semibold text-blue-900 cursor-pointer">Attractions and Activities</summary>
+    <div class="mt-3 pl-4 space-y-3">
+      <p><strong> What are the popular tourist spots in Puerto Galera?</strong><br>
+        • White Beach<br>
+        • Sabang Beach<br>
+        • Aninuan Falls<br>
+        • Tamaraw Falls<br>
+        • Coral Garden (snorkeling/diving)<br>
+        • Ponderosa Golf Course<br>
+        • Talipanan Mangyan Village<br>
+        • Muelle Cultural Heritage Park
+      </p>
+      <p><strong>Is Puerto Galera good for diving?</strong><br>
+        Yes! Puerto Galera is very close to the Verde Island Passage, which is considered the center of marine shorefish biodiversity on the planet. It has more than 40 world-class dive sites and is considered the Diving Capital of the Philippines.
+      </p>
+      <p><strong> Are there eco-tourism and nature activities?</strong><br>
+        Absolutely. Options include hiking, trekking to waterfalls, visiting Mangyan cultural sites, and participating in marine conservation activities.
+      </p>
+    </div>
+  </details>
+
+  <!-- ACCOMMODATION AND FOOD -->
+  <details class="bg-white p-4 rounded-lg shadow-lg open:bg-yellow-50">
+    <summary class="text-xl font-semibold text-blue-900 cursor-pointer">Accommodation and Food</summary>
+    <div class="mt-3 pl-4 space-y-3">
+      <p><strong> What types of accommodations are available?</strong><br>
+        Puerto Galera offers everything from budget hostels and inns to mid-range resorts and luxury beachfront hotels.
+      </p>
+      <p><strong> Is food expensive in Puerto Galera?</strong><br>
+        Food prices vary widely. Budget eateries and carinderias offer affordable meals, while beachfront restaurants may charge more.
+      </p>
+    </div>
+  </details>
+
+  <!-- CULTURE AND LOCAL CUSTOMS -->
+  <details class="bg-white p-4 rounded-lg shadow-lg open:bg-indigo-50">
+    <summary class="text-xl font-semibold text-blue-900 cursor-pointer">Culture and Local Customs</summary>
+    <div class="mt-3 pl-4 space-y-3">
+      <p><strong> What language is spoken in Puerto Galera?</strong><br>
+        Filipino (Tagalog) is the local language, but English is widely understood, especially in tourist areas.
+      </p>
+    </div>
+  </details>
+
+  <!-- OTHER CONCERNS -->
+  <details class="bg-white p-4 rounded-lg shadow-lg open:bg-pink-50">
+    <summary class="text-xl font-semibold text-blue-900 cursor-pointer">Other Concerns</summary>
+    <div class="mt-3 pl-4 space-y-3">
+      <p><strong> Are there medical facilities in Puerto Galera?</strong><br>
+        Yes, there are clinics, a municipal health center and a local hospital at the town proper. For serious medical needs, the nearest large hospital is in Calapan City.
+      </p>
+      <p><strong> Is Puerto Galera a family-friendly destination?</strong><br>
+        Yes, there are family-friendly resorts, kid-safe beaches, and nature activities suitable for all ages.
+      </p>
+    </div>
+  </details>
+</main>
+
+  <script>
+    const menuBtn = document.getElementById('menu-btn');
+    const sidebar = document.getElementById('sidebar');
+
+    menuBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('sidebar-active');
+    });
+  </script>
+
+  <style>
+    .sidebar-active {
+      transform: translateX(0) !important;
+    }
+  </style>
+</body>
+</html>

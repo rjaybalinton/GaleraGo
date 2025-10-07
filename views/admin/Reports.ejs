@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Age & Gender</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="flex min-h-screen">
+        <!-- Sidebar (simple) -->
+        <div class="w-64 bg-blue-900 text-white p-5 space-y-6">
+            <h2 class="text-2xl font-bold">Admin Panel</h2>
+            <nav class="space-y-2">
+                <a href="/admin/dashboard" class="block py-2 px-3 rounded hover:bg-blue-800">Dashboard</a>
+                <a href="/admin/manage-providers" class="block py-2 px-3 rounded hover:bg-blue-800">Manage Providers</a>
+                <a href="/admin/manage-location" class="block py-2 px-3 rounded hover:bg-blue-800">Tourist Locations</a>
+                <a href="/admin/manage-packages" class="block py-2 px-3 rounded hover:bg-blue-800">Manage Packages</a>
+                <a href="/admin/reports" class="block py-2 px-3 rounded bg-blue-800">Reports</a>
+            </nav>
+            <a href="/logout" class="block mt-4 bg-red-600 hover:bg-red-700 text-center py-2 rounded">Logout</a>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 p-6">
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h1 class="text-xl font-semibold text-gray-800">Monthly Reports: Age & Gender</h1>
+                <p class="text-gray-500 text-sm">Tourist registrations aggregated per month</p>
+            </div>
+
+            <div id="msg" class="hidden mb-4">
+                <div id="msgBox" class="px-4 py-3 rounded border"></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="font-medium text-gray-700 mb-3">By Gender (Monthly)</h2>
+                    <canvas id="genderChart" height="150"></canvas>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="font-medium text-gray-700 mb-3">By Age Bucket (Monthly)</h2>
+                    <canvas id="ageChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showMsg(type, text) {
+            const wrap = document.getElementById('msg');
+            const box = document.getElementById('msgBox');
+            const base = 'px-4 py-3 rounded border';
+            let cls = '';
+            if (type === 'success') cls = 'bg-emerald-50 border-emerald-300 text-emerald-800';
+            else if (type === 'error') cls = 'bg-red-50 border-red-300 text-red-800';
+            else cls = 'bg-blue-50 border-blue-300 text-blue-800';
+            box.className = base + ' ' + cls;
+            box.innerText = text;
+            wrap.classList.remove('hidden');
+            clearTimeout(window.__msgTimer);
+            window.__msgTimer = setTimeout(() => wrap.classList.add('hidden'), 3000);
+        }
+
+        async function loadData() {
+            try {
+                const res = await fetch('/admin/reports/age-gender-data');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                renderCharts(data);
+            } catch (e) {
+                showMsg('error', 'Failed to load report data');
+            }
+        }
+
+        function renderCharts({ byGender, byAge }) {
+            // Build month labels (union of months in both datasets)
+            const monthSet = new Set();
+            byGender.forEach(r => monthSet.add(r.month));
+            byAge.forEach(r => monthSet.add(r.month));
+            const months = Array.from(monthSet);
+
+            // Gender series
+            const genders = ['Male', 'Female', 'Other'];
+            const genderColors = {
+                'Male': '#3b82f6',
+                'Female': '#ef4444',
+                'Other': '#10b981'
+            };
+            const genderDatasets = genders.map(g => ({
+                label: g,
+                data: months.map(m => {
+                    const row = byGender.find(r => r.month === m && r.gender === g) || { count: 0 };
+                    return Number(row.count || 0);
+                }),
+                borderColor: genderColors[g],
+                backgroundColor: genderColors[g] + '33',
+                tension: 0.2
+            }));
+
+            new Chart(document.getElementById('genderChart'), {
+                type: 'line',
+                data: { labels: months, datasets: genderDatasets },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            // Age bucket series
+            const ageBuckets = ['0-12','13-17','18-24','25-34','35-44','45-54','55+','Unknown'];
+            const ageColors = ['#f59e0b','#84cc16','#06b6d4','#8b5cf6','#ef4444','#10b981','#3b82f6','#9ca3af'];
+            const ageDatasets = ageBuckets.map((b, i) => ({
+                label: b,
+                data: months.map(m => {
+                    const row = byAge.find(r => r.month === m && r.age_bucket === b) || { count: 0 };
+                    return Number(row.count || 0);
+                }),
+                borderColor: ageColors[i],
+                backgroundColor: ageColors[i] + '33',
+                tension: 0.2
+            }));
+
+            new Chart(document.getElementById('ageChart'), {
+                type: 'line',
+                data: { labels: months, datasets: ageDatasets },
+                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+
+        loadData();
+    </script>
+</body>
+</html> 

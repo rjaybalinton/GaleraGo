@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Puerto Galera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <style>
+        /* Modal animation */
+        .modal {
+            transition: opacity 0.3s ease;
+        }
+        .modal-content {
+            transition: transform 0.3s ease;
+        }
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+        .modal:not(.active) .modal-content {
+            transform: translateY(-50px);
+        }
+        /* Chart styles */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        .modal-chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div id="sidebar" class="w-64 bg-blue-900 text-white p-5 space-y-6 absolute inset-y-0 left-0 transform -translate-x-full transition duration-300 ease-in-out md:relative md:translate-x-0">
+            <h2 class="text-xl font-bold">Admin Panel</h2>
+            <nav class="space-y-2">
+                <a href="/admin/dashboard" class="block py-2 px-4 bg-blue-800 rounded">Dashboard</a>
+                <a href="/admin/manage-providers" class="block py-2 px-4 hover:bg-blue-700 rounded">Manage Providers</a>
+                
+                <a href="/admin/manage-location" class="block py-2 px-4 hover:bg-blue-700 rounded">Manage Location</a>
+                <a href="/admin/manage-packages" class="block py-2 px-4 hover:bg-blue-700 rounded">Manage Packages</a>
+               
+                <a href="/logout" class="block py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-center mt-8">Logout</a>
+            </nav>
+        </div>
+        
+        <!-- Content Area -->
+        <div class="flex-1 flex flex-col">
+            <!-- Navbar -->
+            <header class="bg-white shadow-md p-4 flex justify-between items-center">
+                <button id="menu-btn" class="md:hidden bg-blue-900 text-white px-3 py-2 rounded">☰</button>
+                <h1 class="text-xl font-semibold">Admin Dashboard</h1>
+                <div class="flex items-center gap-4">
+                    <span class="text-gray-600"><%= user.username %></span>
+                </div>
+            </header>
+            
+            <!-- Main Content -->
+            <main class="p-6 overflow-auto">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <!-- Stats Cards -->
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold text-gray-700">Total Tourists</h3>
+                        <p class="text-3xl font-bold text-blue-600" id="tourist-count">Loading...</p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold text-gray-700">Total Users</h3>
+                        <p class="text-3xl font-bold text-green-600" id="user-count">Loading...</p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold text-gray-700">Service Providers</h3>
+                        <p class="text-3xl font-bold text-purple-600" id="provider-count">Loading...</p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h3 class="text-lg font-semibold text-gray-700">Packages</h3>
+                        <p class="text-3xl font-bold text-orange-600" id="package-count">Loading...</p>
+                    </div>
+                </div>
+                
+                <!-- Recent Tourists -->
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-4">Recent Tourist Registrations</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white">
+                            <thead>
+                                <tr>
+                                    <th class="py-2 px-4 border-b text-left">Name</th>
+                                    <th class="py-2 px-4 border-b text-left">Email</th>
+                                    <th class="py-2 px-4 border-b text-left">Type</th>
+                                    <th class="py-2 px-4 border-b text-left">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-tourists-table">
+                                <tr>
+                                    <td class="py-2 px-4 border-b" colspan="4">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <button id="generate-report-btn" class="bg-blue-100 hover:bg-blue-200 p-4 rounded-lg text-center transition-colors duration-200">
+                            <i class="fas fa-file-export text-2xl text-blue-600 mb-2"></i>
+                            <p class="font-medium text-sm">Generate Report</p>
+                        </button>
+                        
+                        <button id="open-reports-modal" class="bg-purple-100 hover:bg-purple-200 p-4 rounded-lg text-center transition-colors duration-200">
+                            <i class="fas fa-chart-bar text-2xl text-purple-600 mb-2"></i>
+                            <p class="font-medium text-sm">View Reports</p>
+                        </button>
+                        
+                        <button id="open-create-admin-modal" class="bg-green-100 hover:bg-green-200 p-4 rounded-lg text-center transition-colors duration-200">
+                            <i class="fas fa-user-cog text-2xl text-green-600 mb-2"></i>
+                            <p class="font-medium text-sm">Create Admin Account</p>
+                        </button>
+                    </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+   
+    
+    <!-- View Reports Modal -->
+    <div id="reports-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-6xl mx-4 p-6 transform">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Tourist Reports</h3>
+                <button class="close-modal text-gray-600 hover:text-gray-800">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="space-y-6">
+                <!-- Report Tabs -->
+                <div class="border-b border-gray-200">
+                    <nav class="flex -mb-px">
+                        <button class="report-tab text-blue-600 border-b-2 border-blue-500 py-2 px-4" data-tab="by-type">By Type</button>
+                        <button class="report-tab text-gray-500 hover:text-gray-700 py-2 px-4" data-tab="by-nationality">By Nationality</button>
+                        <button class="report-tab text-gray-500 hover:text-gray-700 py-2 px-4" data-tab="by-month">By Month</button>
+                        <button class="report-tab text-gray-500 hover:text-gray-700 py-2 px-4" data-tab="by-gender">By Gender</button>
+                        <button class="report-tab text-gray-500 hover:text-gray-700 py-2 px-4" data-tab="by-age">By Age</button>
+                    </nav>
+                </div>
+                
+                <!-- Report Content -->
+                <div id="report-content">
+                    <!-- By Type Tab -->
+                    <div id="by-type-content" class="report-content">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="chart-container">
+                                <canvas id="type-chart"></canvas>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-lg mb-2">Tourist Types</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white">
+                                        <thead>
+                                            <tr>
+                                                <th class="py-2 px-4 border-b text-left">Type</th>
+                                                <th class="py-2 px-4 border-b text-left">Count</th>
+                                                <th class="py-2 px-4 border-b text-left">Percentage</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="type-table">
+                                            <tr>
+                                                <td class="py-2 px-4 border-b" colspan="3">Loading...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- By Nationality Tab -->
+                    <div id="by-nationality-content" class="report-content hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="chart-container">
+                                <canvas id="nationality-chart"></canvas>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-lg mb-2">Top Nationalities</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white">
+                                        <thead>
+                                            <tr>
+                                                <th class="py-2 px-4 border-b text-left">Nationality</th>
+                                                <th class="py-2 px-4 border-b text-left">Count</th>
+                                                <th class="py-2 px-4 border-b text-left">Percentage</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="nationality-table">
+                                            <tr>
+                                                <td class="py-2 px-4 border-b" colspan="3">Loading...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- By Month Tab -->
+                    <div id="by-month-content" class="report-content hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="chart-container">
+                            <canvas id="month-chart"></canvas>
+                        </div>
+                            <div>
+                            <h4 class="font-semibold text-lg mb-2">Monthly Statistics</h4>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full bg-white">
+                                    <thead>
+                                        <tr>
+                                            <th class="py-2 px-4 border-b text-left">Month</th>
+                                            <th class="py-2 px-4 border-b text-left">Tourist Count</th>
+                                            <th class="py-2 px-4 border-b text-left">Change</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="month-table">
+                                        <tr>
+                                            <td class="py-2 px-4 border-b" colspan="3">Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- By Gender Tab -->
+                    <div id="by-gender-content" class="report-content hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="chart-container">
+                                <canvas id="modalGenderChart"></canvas>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-lg mb-2">Gender Distribution</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white">
+                                        <thead>
+                                            <tr>
+                                                <th class="py-2 px-4 border-b text-left">Gender</th>
+                                                <th class="py-2 px-4 border-b text-left">Count</th>
+                                                <th class="py-2 px-4 border-b text-left">Percentage</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="gender-table">
+                                            <tr>
+                                                <td class="py-2 px-4 border-b" colspan="3">Loading...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- By Age Tab -->
+                    <div id="by-age-content" class="report-content hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="chart-container">
+                                <canvas id="modalAgeChart"></canvas>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-lg mb-2">Age Distribution</h4>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white">
+                                        <thead>
+                                            <tr>
+                                                <th class="py-2 px-4 border-b text-left">Age Group</th>
+                                                <th class="py-2 px-4 border-b text-left">Count</th>
+                                                <th class="py-2 px-4 border-b text-left">Percentage</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="age-table">
+                                            <tr>
+                                                <td class="py-2 px-4 border-b" colspan="3">Loading...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pt-4 flex justify-end">
+                    <button type="button" class="close-modal px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Create Admin Account Modal -->
+    <div id="create-admin-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 p-6 transform max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Create Admin Account</h3>
+                <button class="close-modal text-gray-600 hover:text-gray-800">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="create-admin-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                        <input type="text" id="username" name="username" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+                    </div>
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="email" name="email" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+                    </div>
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="password" name="password" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="first_name" class="block text-sm font-medium text-gray-700">First Name</label>
+                        <input type="text" id="first_name" name="first_name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+                    </div>
+                    <div>
+                        <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name</label>
+                        <input type="text" id="last_name" name="last_name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+                    </div>
+                </div>
+                <div>
+                    <label for="contact_number" class="block text-sm font-medium text-gray-700">Contact Number</label>
+                    <input type="tel" id="contact_number" name="contact_number" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="date_of_birth" class="block text-sm font-medium text-gray-700">Date of Birth</label>
+                        <input type="date" id="date_of_birth" name="date_of_birth" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+                    </div>
+                    <div>
+                        <label for="gender" class="block text-sm font-medium text-gray-700">Gender</label>
+                        <select id="gender" name="gender" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+                            <option value="">Select Gender</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label for="nationality" class="block text-sm font-medium text-gray-700">Nationality</label>
+                    <input type="text" id="nationality" name="nationality" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50">
+                </div>
+                <div>
+                    <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
+                    <textarea id="address" name="address" rows="2" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" class="close-modal px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Create Admin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Success Message Boxes -->
+    <div id="success-message" class="fixed top-4 right-4 z-50 hidden" style="min-width: 350px;">
+        <div class="bg-green-500 text-white px-6 py-4 rounded-lg shadow-xl flex items-center space-x-3 border-l-4 border-green-600">
+            <i class="fas fa-check-circle text-2xl"></i>
+            <div class="flex-1">
+                <p class="font-bold text-lg" id="success-title">Success!</p>
+                <p class="text-sm opacity-90" id="success-message-text">Operation completed successfully.</p>
+            </div>
+            <button onclick="hideSuccessMessage()" class="ml-4 text-white hover:text-gray-200 text-xl">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- PDF Download Success Modal -->
+    <div id="pdf-success-modal" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6 transform">
+            <div class="flex justify-end mb-2">
+                <button class="close-modal text-gray-600 hover:text-gray-800">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-4">
+                    <i class="fas fa-download text-green-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Report Downloaded Successfully!</h3>
+                <p class="text-gray-600 mb-6" id="pdf-success-filename">Your PDF report has been downloaded to your device.</p>
+                <div class="flex justify-center space-x-3">
+                    <button class="close-modal px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <i class="fas fa-check mr-2"></i>Got it!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+     <script>
+        // Success message functions
+        function showSuccessMessage(title, message) {
+            console.log('Showing success message:', title, message);
+            
+            const successElement = document.getElementById('success-message');
+            const titleElement = document.getElementById('success-title');
+            const messageElement = document.getElementById('success-message-text');
+            
+            if (successElement && titleElement && messageElement) {
+                titleElement.textContent = title;
+                messageElement.textContent = message;
+                successElement.classList.remove('hidden');
+                
+                // Add animation class for better visibility
+                successElement.style.opacity = '0';
+                successElement.style.transform = 'translateX(100%)';
+                
+                // Animate in
+                setTimeout(() => {
+                    successElement.style.transition = 'all 0.3s ease-in-out';
+                    successElement.style.opacity = '1';
+                    successElement.style.transform = 'translateX(0)';
+                }, 10);
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    hideSuccessMessage();
+                }, 5000);
+            } else {
+                console.error('Success message elements not found');
+            }
+        }
+
+        function hideSuccessMessage() {
+            const successElement = document.getElementById('success-message');
+            if (successElement) {
+                successElement.style.transition = 'all 0.3s ease-in-out';
+                successElement.style.opacity = '0';
+                successElement.style.transform = 'translateX(100%)';
+                
+                setTimeout(() => {
+                    successElement.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        // Handle admin account creation form
+        document.getElementById("create-admin-form").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            
+            // Validate required fields
+            const requiredFields = ['username', 'email', 'password', 'first_name', 'last_name', 'contact_number', 'date_of_birth', 'gender', 'nationality', 'address'];
+            const missingFields = [];
+            
+            for (let [key, value] of formData.entries()) {
+                if (requiredFields.includes(key) && (!value || value.trim() === '')) {
+                    missingFields.push(key);
+                }
+            }
+            
+            if (missingFields.length > 0) {
+                showSuccessMessage('Error!', `Please fill in all required fields: ${missingFields.join(', ')}`);
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                return;
+            }
+            
+            // Show loading state
+            submitBtn.textContent = 'Creating...';
+            submitBtn.disabled = true;
+            
+            try {
+                // Convert FormData to JSON object
+                const jsonData = {};
+                for (let [key, value] of formData.entries()) {
+                    jsonData[key] = value;
+                }
+                
+                
+                const response = await fetch('/admin/create-admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(jsonData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Show success message
+                    showSuccessMessage('Admin Account Created!', `Admin account for "${formData.get('username')}" has been created successfully.`);
+                    
+                    // Close modal and reset form
+                    document.getElementById("create-admin-modal").classList.add("hidden");
+                    this.reset();
+                } else {
+                    // Show error message
+                    showSuccessMessage('Error!', result.message || 'Failed to create admin account. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error creating admin account:', error);
+                showSuccessMessage('Error!', 'Failed to create admin account. Please try again.');
+            } finally {
+                // Reset button state
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // PDF Success Modal functions
+        function showPdfSuccessModal(fileName) {
+            console.log('Showing PDF success modal for:', fileName);
+            
+            const modal = document.getElementById('pdf-success-modal');
+            const filenameElement = document.getElementById('pdf-success-filename');
+            
+            if (modal && filenameElement) {
+                filenameElement.textContent = `File "${fileName}" has been downloaded to your device.`;
+                modal.classList.remove('hidden');
+                setTimeout(() => modal.classList.add('active'), 10);
+            } else {
+                console.error('PDF success modal elements not found');
+            }
+        }
+
+        function closePdfSuccessModal() {
+            const modal = document.getElementById('pdf-success-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('active');
+            }
+        }
+
+        // Test function for success message (can be removed later)
+        function testSuccessMessage() {
+            showSuccessMessage('Test Message!', 'This is a test success message to verify the functionality.');
+        }
+
+        // Test function for PDF success modal
+        function testPdfSuccessModal() {
+            showPdfSuccessModal('test-report-2025-01-20.pdf');
+        }
+
+        // Test function for admin creation form
+        function testAdminForm() {
+            const form = document.getElementById('create-admin-form');
+            if (form) {
+                // Fill form with test data
+                form.querySelector('#username').value = 'testadmin';
+                form.querySelector('#email').value = 'testadmin@example.com';
+                form.querySelector('#password').value = 'testpassword123';
+                form.querySelector('#first_name').value = 'Test';
+                form.querySelector('#last_name').value = 'Admin';
+                form.querySelector('#contact_number').value = '+1234567890';
+                form.querySelector('#date_of_birth').value = '1990-01-01';
+                form.querySelector('#gender').value = 'Male';
+                form.querySelector('#nationality').value = 'Filipino';
+                form.querySelector('#address').value = '123 Test Street, City';
+                
+                console.log('Form filled with test data');
+                
+                // Show the modal
+                document.getElementById('create-admin-modal').classList.remove('hidden');
+            } else {
+                console.error('Admin form not found');
+            }
+        }
+
+        // Open and close modals
+        document.getElementById("open-create-admin-modal").addEventListener("click", function() {
+            document.getElementById("create-admin-modal").classList.remove("hidden");
+            setTimeout(() => document.getElementById("create-admin-modal").classList.add("active"), 10);
+        });
+
+        // Open Reports modal
+        document.getElementById("open-reports-modal").addEventListener("click", function() {
+            const modal = document.getElementById("reports-modal");
+            modal.classList.remove("hidden");
+            setTimeout(() => modal.classList.add("active"), 10);
+            // Initialize the first tab (by-type) when modal opens
+            loadReports('by-type');
+        });
+
+        document.querySelectorAll('.close-modal').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.modal').forEach(modal => {
+                    modal.classList.remove('active');
+                    setTimeout(() => modal.classList.add('hidden'), 300);
+                });
+            });
+        });
+    </script>
+    
+    <!-- Include Chart.js for reports -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Include libraries for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <script>
+        // Mobile menu toggle
+        const menuBtn = document.getElementById('menu-btn');
+        const sidebar = document.getElementById('sidebar');
+        
+        menuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+        });
+        
+
+        // Render charts inside Reports modal
+        async function renderAgeGenderChartsModal() {
+            try {
+                const res = await fetch('/admin/reports/age-gender-data');
+                const { byGender, byAge } = await res.json();
+                const monthSet = new Set();
+                byGender.forEach(r => monthSet.add(r.month));
+                byAge.forEach(r => monthSet.add(r.month));
+                const months = Array.from(monthSet);
+
+                // Calculate gender totals for table
+                const genderTotals = {};
+                byGender.forEach(r => {
+                    genderTotals[r.gender] = (genderTotals[r.gender] || 0) + Number(r.count);
+                });
+                const totalGender = Object.values(genderTotals).reduce((sum, count) => sum + count, 0);
+
+                // Calculate age totals for table
+                const ageTotals = {};
+                byAge.forEach(r => {
+                    ageTotals[r.age_bucket] = (ageTotals[r.age_bucket] || 0) + Number(r.count);
+                });
+                const totalAge = Object.values(ageTotals).reduce((sum, count) => sum + count, 0);
+
+                // Render gender chart
+                const genders = ['Male','Female','Other'];
+                const genderColors = { Male:'#3b82f6', Female:'#ef4444', Other:'#10b981' };
+                const genderDatasets = genders.map(g => ({
+                    label: g,
+                    data: months.map(m => Number((byGender.find(r => r.month===m && r.gender===g)||{}).count||0)),
+                    borderColor: genderColors[g],
+                    backgroundColor: genderColors[g]+'33',
+                    tension: 0.2
+                }));
+                // Destroy previous charts if re-opened
+                if (window.__modalGenderChart) window.__modalGenderChart.destroy();
+                window.__modalGenderChart = new Chart(document.getElementById('modalGenderChart'), {
+                    type:'line', data:{ labels: months, datasets: genderDatasets }, options:{ plugins:{ legend:{ position:'bottom' } } }
+                });
+
+                // Render age chart
+                const ageBuckets = ['0-12','13-17','18-24','25-34','35-44','45-54','55+','Unknown'];
+                const ageColors = ['#f59e0b','#84cc16','#06b6d4','#8b5cf6','#ef4444','#10b981','#3b82f6','#9ca3af'];
+                const ageDatasets = ageBuckets.map((b,i)=>({
+                    label:b,
+                    data: months.map(m => Number((byAge.find(r => r.month===m && r.age_bucket===b)||{}).count||0)),
+                    borderColor: ageColors[i],
+                    backgroundColor: ageColors[i]+'33',
+                    tension: 0.2
+                }));
+                if (window.__modalAgeChart) window.__modalAgeChart.destroy();
+                window.__modalAgeChart = new Chart(document.getElementById('modalAgeChart'), {
+                    type:'line', data:{ labels: months, datasets: ageDatasets }, options:{ plugins:{ legend:{ position:'bottom' } } }
+                });
+
+                // Populate gender table
+                const genderTableBody = document.getElementById('gender-table');
+                genderTableBody.innerHTML = '';
+                genders.forEach(gender => {
+                    const count = genderTotals[gender] || 0;
+                    const percentage = totalGender > 0 ? ((count / totalGender) * 100).toFixed(1) : '0.0';
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="py-2 px-4 border-b">${gender}</td>
+                        <td class="py-2 px-4 border-b">${count}</td>
+                        <td class="py-2 px-4 border-b">${percentage}%</td>
+                    `;
+                    genderTableBody.appendChild(row);
+                });
+
+                // Populate age table
+                const ageTableBody = document.getElementById('age-table');
+                ageTableBody.innerHTML = '';
+                ageBuckets.forEach(ageBucket => {
+                    const count = ageTotals[ageBucket] || 0;
+                    const percentage = totalAge > 0 ? ((count / totalAge) * 100).toFixed(1) : '0.0';
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="py-2 px-4 border-b">${ageBucket}</td>
+                        <td class="py-2 px-4 border-b">${count}</td>
+                        <td class="py-2 px-4 border-b">${percentage}%</td>
+                    `;
+                    ageTableBody.appendChild(row);
+                });
+
+            } catch (e) {
+                console.warn('Modal Age/Gender charts load failed', e);
+                // Show error in tables
+                document.getElementById('gender-table').innerHTML = `<tr><td class="py-2 px-4 border-b text-red-500" colspan="3">Error loading data</td></tr>`;
+                document.getElementById('age-table').innerHTML = `<tr><td class="py-2 px-4 border-b text-red-500" colspan="3">Error loading data</td></tr>`;
+            }
+        }
+
+        // Fetch dashboard data
+        async function fetchDashboardData() {
+            try {
+                const response = await fetch('/admin/dashboard-data');
+                const data = await response.json();
+                
+                // Update stats with fallbacks
+                document.getElementById('tourist-count').textContent = data.counts?.tourists || 0;
+                document.getElementById('user-count').textContent = data.counts?.users || 0;
+                document.getElementById('provider-count').textContent = data.counts?.providers || 0;
+                
+                
+                // Update recent tourists table
+                const tableBody = document.getElementById('recent-tourists-table');
+                tableBody.innerHTML = '';
+                
+                if (data.recentTourists && data.recentTourists.length > 0) {
+                    data.recentTourists.forEach(tourist => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="py-2 px-4 border-b">${tourist.first_name || ''} ${tourist.last_name || ''}</td>
+                            <td class="py-2 px-4 border-b">${tourist.email || ''}</td>
+                            <td class="py-2 px-4 border-b">${tourist.registration_type || 'Regular Tourist'}</td>
+                            <td class="py-2 px-4 border-b">${tourist.created_at ? new Date(tourist.created_at).toLocaleDateString() : ''}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                } else {
+                    tableBody.innerHTML = '<tr><td class="py-2 px-4 border-b" colspan="4">No recent tourists</td></tr>';
+                }
+                
+                // Fetch package count
+               try {
+                    const packagesResponse = await fetch('/admin/packages/data');
+                    if (packagesResponse.ok) {
+                        const packages = await packagesResponse.json();
+                        document.getElementById('package-count').textContent = Array.isArray(packages) ? packages.length : 0;
+                    } else {
+                        document.getElementById('package-count').textContent = 0;
+                    }
+                } catch (packageError) {
+                    console.error('Error fetching packages:', packageError);
+                    document.getElementById('package-count').textContent = 0;
+                }
+                
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+                // Set default values on error
+                document.getElementById('tourist-count').textContent = 0;
+                document.getElementById('user-count').textContent = 0;
+                document.getElementById('provider-count').textContent = 0;
+                document.getElementById('package-count').textContent = 0;
+                
+                const tableBody = document.getElementById('recent-tourists-table');
+                tableBody.innerHTML = '<tr><td class="py-2 px-4 border-b text-red-500" colspan="4">Error loading data</td></tr>';
+            }
+        }
+        
+        // Generate PDF Report Function
+        async function generateReport() {
+            try {
+                // Show loading state
+                const generateBtn = document.getElementById('generate-report-btn');
+                const originalText = generateBtn.innerHTML;
+                generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-3xl text-blue-600 mb-3"></i><p class="font-medium">Generating PDF...</p>';
+                generateBtn.disabled = true;
+
+                // Fetch all report data
+                const [touristStatsResponse, ageGenderResponse] = await Promise.all([
+                    fetch('/admin/tourist-stats'),
+                    fetch('/admin/reports/age-gender-data')
+                ]);
+
+                if (!touristStatsResponse.ok || !ageGenderResponse.ok) {
+                    throw new Error('Failed to fetch report data');
+                }
+
+                const touristStats = await touristStatsResponse.json();
+                const ageGenderData = await ageGenderResponse.json();
+
+                // Show the reports modal temporarily to render charts
+                console.log('Opening reports modal for chart rendering...');
+                const reportsModal = document.getElementById('reports-modal');
+                if (reportsModal) {
+                    reportsModal.classList.remove('hidden');
+                }
+
+                // Show all tab contents to ensure all charts are visible for capture
+                const tabContents = ['by-type-content', 'by-nationality-content', 'by-month-content', 'by-gender-content', 'by-age-content'];
+                tabContents.forEach(contentId => {
+                    const content = document.getElementById(contentId);
+                    if (content) {
+                        content.classList.remove('hidden');
+                    }
+                });
+
+                // Render charts first to ensure they're available for capture
+                console.log('Rendering charts...');
+                if (touristStats.byType) {
+                    console.log('Rendering type report...');
+                    renderTypeReport(touristStats.byType);
+                }
+                if (touristStats.byNationality) {
+                    console.log('Rendering nationality report...');
+                    renderNationalityReport(touristStats.byNationality);
+                }
+                if (touristStats.byMonth) {
+                    console.log('Rendering month report...');
+                    renderMonthReport(touristStats.byMonth);
+                }
+                if (ageGenderData.byGender || ageGenderData.byAge) {
+                    console.log('Rendering age/gender charts...');
+                    await renderAgeGenderChartsModal();
+                }
+
+                // Wait a moment for charts to render
+                console.log('Waiting for charts to render...');
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                // Create PDF report
+                console.log('Starting PDF generation...');
+                await generatePDFReport(touristStats, ageGenderData);
+                console.log('PDF generation completed successfully');
+
+                // Hide the reports modal after PDF generation
+                console.log('Hiding reports modal...');
+                if (reportsModal) {
+                    reportsModal.classList.add('hidden');
+                }
+
+                // Hide all tab contents except the first one
+                tabContents.forEach((contentId, index) => {
+                    const content = document.getElementById(contentId);
+                    if (content && index > 0) {
+                        content.classList.add('hidden');
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error generating report:', error);
+                alert('Error generating PDF report. Please try again.');
+                
+                // Ensure modal is hidden even on error
+                const reportsModal = document.getElementById('reports-modal');
+                if (reportsModal) {
+                    reportsModal.classList.add('hidden');
+                }
+
+                // Hide all tab contents except the first one
+                const tabContents = ['by-type-content', 'by-nationality-content', 'by-month-content', 'by-gender-content', 'by-age-content'];
+                tabContents.forEach((contentId, index) => {
+                    const content = document.getElementById(contentId);
+                    if (content && index > 0) {
+                        content.classList.add('hidden');
+                    }
+                });
+            } finally {
+                // Reset button state
+                const generateBtn = document.getElementById('generate-report-btn');
+                generateBtn.innerHTML = '<i class="fas fa-file-export text-3xl text-blue-600 mb-3"></i><p class="font-medium">Generate Report</p>';
+                generateBtn.disabled = false;
+            }
+        }
+
+        // Generate PDF Report with Charts
+        async function generatePDFReport(touristStats, ageGenderData) {
+            try {
+                console.log('Starting PDF generation...');
+                console.log('Tourist stats:', touristStats);
+                console.log('Age gender data:', ageGenderData);
+                
+                const { jsPDF } = window.jspdf;
+                if (!jsPDF) {
+                    throw new Error('jsPDF library not loaded');
+                }
+                
+                const doc = new jsPDF('p', 'mm', 'a4');
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+                let yPosition = 20;
+
+                // Helper function to capture chart as image
+                async function captureChart(canvasId, width = 160, height = 100) {
+                    try {
+                        console.log(`Attempting to capture chart: ${canvasId}`);
+                        const canvas = document.getElementById(canvasId);
+                        if (!canvas) {
+                            console.log(`Canvas not found: ${canvasId}`);
+                            return null;
+                        }
+                        
+                        const imgData = canvas.toDataURL('image/png');
+                        console.log(`Chart captured successfully: ${canvasId}`);
+                        return imgData;
+                    } catch (error) {
+                        console.error(`Error capturing chart ${canvasId}:`, error);
+                        return null;
+                    }
+                }
+
+            // Helper function to add text with word wrap
+            function addText(text, x, y, maxWidth, fontSize = 12, align = 'left') {
+                doc.setFontSize(fontSize);
+                const lines = doc.splitTextToSize(text, maxWidth);
+                doc.text(lines, x, y, { align: align });
+                return y + (lines.length * fontSize * 0.4);
+            }
+
+            // Helper function to add a new page if needed
+            function checkNewPage(requiredSpace) {
+                if (yPosition + requiredSpace > pageHeight - 20) {
+                    doc.addPage();
+                    yPosition = 20;
+                    return true;
+                }
+                return false;
+            }
+
+            // Title
+            doc.setFontSize(20);
+            doc.setTextColor(59, 130, 246); // Blue color
+            yPosition = addText('Puerto Galera Tourist Report', pageWidth / 2, yPosition, pageWidth - 40, 20, 'center');
+            // Subtitle
+            doc.setFontSize(14);
+            doc.setTextColor(59, 130, 246);
+            yPosition = addText('GaleraGo', pageWidth / 2, yPosition, pageWidth - 40, 14, 'center');
+            
+            // Date
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            yPosition = addText(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, yPosition + 3, pageWidth - 40, 10, 'center');
+            
+            yPosition += 10;
+
+            // Summary Section
+            doc.setFontSize(16);
+            doc.setTextColor(0, 0, 0);
+            yPosition = addText('Summary Statistics', 20, yPosition, pageWidth - 40, 16);
+            yPosition += 3;
+
+            // Summary cards - more compact
+            const summaryData = {
+                'Total Tourists': touristStats.byType?.reduce((sum, item) => sum + item.count, 0) || 0,
+                'Total Users': document.getElementById('user-count').textContent,
+                'Service Providers': document.getElementById('provider-count').textContent,
+                'Tour Packages': document.getElementById('package-count').textContent
+            };
+
+            const cardWidth = (pageWidth - 60) / 2;
+            const cardHeight = 18;
+            let cardX = 20;
+            let cardY = yPosition;
+
+            Object.entries(summaryData).forEach(([label, value], index) => {
+                if (index > 0 && index % 2 === 0) {
+                    cardY += cardHeight + 5;
+                    cardX = 20;
+                }
+                
+                // Draw card background
+                doc.setFillColor(240, 248, 255);
+                doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 2, 2, 'F');
+                
+                // Draw border
+                doc.setDrawColor(59, 130, 246);
+                doc.setLineWidth(0.5);
+                doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 2, 2, 'S');
+                
+                // Add text
+                doc.setFontSize(12);
+                doc.setTextColor(59, 130, 246);
+                doc.text(value.toString(), cardX + 8, cardY + 8);
+                
+                doc.setFontSize(8);
+                doc.setTextColor(100, 100, 100);
+                doc.text(label, cardX + 8, cardY + 14);
+                
+                cardX += cardWidth + 20;
+            });
+
+            yPosition = cardY + cardHeight + 15;
+
+            // Tourist Types Section - Same Page
+            if (touristStats.byType && touristStats.byType.length > 0) {
+                // Title for this section
+                doc.setFontSize(18);
+                doc.setTextColor(59, 130, 246);
+                yPosition = addText('Tourist Statistics by Type', 20, yPosition, pageWidth - 40, 18);
+                yPosition += 8;
+
+                // Add chart if available (with fallback) - smaller size
+                try {
+                    const typeChartImg = await captureChart('type-chart');
+                    if (typeChartImg) {
+                        doc.addImage(typeChartImg, 'PNG', 20, yPosition, 80, 60);
+                        yPosition += 65;
+                    }
+                } catch (chartError) {
+                    console.log('Chart capture failed, continuing without chart:', chartError);
+                }
+
+                // Create table for tourist types
+                const tableData = [['Type', 'Count', 'Percentage']];
+                const totalTourists = touristStats.byType.reduce((sum, item) => sum + item.count, 0);
+                
+                touristStats.byType.forEach(item => {
+                    const percentage = totalTourists > 0 ? ((item.count / totalTourists) * 100).toFixed(1) : '0.0';
+                    tableData.push([item.type, item.count.toString(), percentage + '%']);
+                });
+
+                yPosition = createTable(doc, tableData, 20, yPosition, pageWidth - 40);
+                yPosition += 10;
+            }
+
+            // Nationality Section - New Page
+            if (touristStats.byNationality && touristStats.byNationality.length > 0) {
+                doc.addPage(); // Start new page for this section
+                yPosition = 15;
+                
+                // Title for this page
+                doc.setFontSize(18);
+                doc.setTextColor(59, 130, 246);
+                yPosition = addText('Tourist Statistics by Nationality', 20, yPosition, pageWidth - 40, 18);
+                yPosition += 8;
+
+                // Add chart if available (with fallback) - smaller size
+                try {
+                    const nationalityChartImg = await captureChart('nationality-chart');
+                    if (nationalityChartImg) {
+                        doc.addImage(nationalityChartImg, 'PNG', 20, yPosition, 80, 60);
+                        yPosition += 65;
+                    }
+                } catch (chartError) {
+                    console.log('Chart capture failed, continuing without chart:', chartError);
+                }
+
+                const tableData = [['Nationality', 'Count', 'Percentage']];
+                const totalNationality = touristStats.byNationality.reduce((sum, item) => sum + item.count, 0);
+                
+                touristStats.byNationality.forEach(item => {
+                    const percentage = totalNationality > 0 ? ((item.count / totalNationality) * 100).toFixed(1) : '0.0';
+                    tableData.push([item.nationality, item.count.toString(), percentage + '%']);
+                });
+
+                yPosition = createTable(doc, tableData, 20, yPosition, pageWidth - 40);
+                yPosition += 15;
+            }
+
+            // Monthly Trends Section - Same Page
+            if (touristStats.byMonth && touristStats.byMonth.length > 0) {
+                // Title for this section
+                doc.setFontSize(18);
+                doc.setTextColor(59, 130, 246);
+                yPosition = addText('Monthly Tourist Trends', 20, yPosition, pageWidth - 40, 18);
+                yPosition += 8;
+
+                // Add chart if available (with fallback) - smaller size
+                try {
+                    const monthChartImg = await captureChart('month-chart');
+                    if (monthChartImg) {
+                        doc.addImage(monthChartImg, 'PNG', 20, yPosition, 80, 60);
+                        yPosition += 65;
+                    }
+                } catch (chartError) {
+                    console.log('Chart capture failed, continuing without chart:', chartError);
+                }
+
+                const tableData = [['Month', 'Tourist Count', 'Change']];
+                
+                touristStats.byMonth.forEach((item, index) => {
+                    const prevCount = index > 0 ? touristStats.byMonth[index - 1].count : 0;
+                    const change = item.count - prevCount;
+                    const changeText = index === 0 ? 'N/A' : 
+                        change > 0 ? `+${change} (↑)` : 
+                        change < 0 ? `${change} (↓)` : '0 (-)';
+                    tableData.push([item.month, item.count.toString(), changeText]);
+                });
+
+                yPosition = createTable(doc, tableData, 20, yPosition, pageWidth - 40);
+                yPosition += 10;
+            }
+
+            // Gender Distribution Section - New Page
+            if (ageGenderData.byGender && ageGenderData.byGender.length > 0) {
+                doc.addPage(); // Start new page for this section
+                yPosition = 15;
+                
+                // Title for this page
+                doc.setFontSize(18);
+                doc.setTextColor(59, 130, 246);
+                yPosition = addText('Gender Distribution', 20, yPosition, pageWidth - 40, 18);
+                yPosition += 8;
+
+                // Add chart if available (with fallback) - smaller size
+                try {
+                    const genderChartImg = await captureChart('modalGenderChart');
+                    if (genderChartImg) {
+                        doc.addImage(genderChartImg, 'PNG', 20, yPosition, 80, 60);
+                        yPosition += 65;
+                    }
+                } catch (chartError) {
+                    console.log('Chart capture failed, continuing without chart:', chartError);
+                }
+
+                // Calculate gender totals
+                const genderTotals = {};
+                ageGenderData.byGender.forEach(r => {
+                    genderTotals[r.gender] = (genderTotals[r.gender] || 0) + Number(r.count);
+                });
+                const totalGender = Object.values(genderTotals).reduce((sum, count) => sum + count, 0);
+
+                const tableData = [['Gender', 'Count', 'Percentage']];
+                Object.entries(genderTotals).forEach(([gender, count]) => {
+                    const percentage = totalGender > 0 ? ((count / totalGender) * 100).toFixed(1) : '0.0';
+                    tableData.push([gender, count.toString(), percentage + '%']);
+                });
+
+                yPosition = createTable(doc, tableData, 20, yPosition, pageWidth - 40);
+                yPosition += 15;
+            }
+
+            // Age Distribution Section - Same Page
+            if (ageGenderData.byAge && ageGenderData.byAge.length > 0) {
+                // Title for this section
+                doc.setFontSize(18);
+                doc.setTextColor(59, 130, 246);
+                yPosition = addText('Age Distribution', 20, yPosition, pageWidth - 40, 18);
+                yPosition += 8;
+
+                // Add chart if available (with fallback) - smaller size
+                try {
+                    const ageChartImg = await captureChart('modalAgeChart');
+                    if (ageChartImg) {
+                        doc.addImage(ageChartImg, 'PNG', 20, yPosition, 80, 60);
+                        yPosition += 65;
+                    }
+                } catch (chartError) {
+                    console.log('Chart capture failed, continuing without chart:', chartError);
+                }
+
+                // Calculate age totals
+                const ageTotals = {};
+                ageGenderData.byAge.forEach(r => {
+                    ageTotals[r.age_bucket] = (ageTotals[r.age_bucket] || 0) + Number(r.count);
+                });
+                const totalAge = Object.values(ageTotals).reduce((sum, count) => sum + count, 0);
+
+                const tableData = [['Age Group', 'Count', 'Percentage']];
+                Object.entries(ageTotals).forEach(([ageGroup, count]) => {
+                    const percentage = totalAge > 0 ? ((count / totalAge) * 100).toFixed(1) : '0.0';
+                    tableData.push([ageGroup, count.toString(), percentage + '%']);
+                });
+
+                yPosition = createTable(doc, tableData, 20, yPosition, pageWidth - 40);
+                yPosition += 10;
+            }
+
+            // Footer
+            doc.setFontSize(10);
+            doc.setTextColor(150, 150, 150);
+            doc.text('Generated by GaleraGo Management System', pageWidth / 2, pageHeight - 10, { align: 'center' });
+
+                // Save the PDF
+                console.log('Saving PDF...');
+                const fileName = `tourist-report-${new Date().toISOString().split('T')[0]}.pdf`;
+                doc.save(fileName);
+                
+                console.log('PDF saved successfully:', fileName);
+                
+                // Show success modal after a short delay to ensure PDF download starts
+                setTimeout(() => {
+                    showPdfSuccessModal(fileName);
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error in generatePDFReport:', error);
+                throw error; // Re-throw to be caught by the calling function
+            }
+        }
+
+        // Helper function to create tables
+        function createTable(doc, data, x, y, maxWidth) {
+            const colWidth = maxWidth / data[0].length;
+            const rowHeight = 6;
+            let currentY = y;
+
+            // Draw header
+            doc.setFillColor(59, 130, 246);
+            doc.rect(x, currentY, maxWidth, rowHeight, 'F');
+            
+            doc.setFontSize(9);
+            doc.setTextColor(255, 255, 255);
+            data[0].forEach((header, index) => {
+                doc.text(header, x + (index * colWidth) + 2, currentY + 4);
+            });
+
+            currentY += rowHeight;
+
+            // Draw data rows
+            doc.setFontSize(8);
+            doc.setTextColor(0, 0, 0);
+            
+            for (let i = 1; i < data.length; i++) {
+                // Alternate row colors
+                if (i % 2 === 0) {
+                    doc.setFillColor(248, 250, 252);
+                    doc.rect(x, currentY, maxWidth, rowHeight, 'F');
+                }
+                
+                data[i].forEach((cell, index) => {
+                    doc.text(cell, x + (index * colWidth) + 2, currentY + 4);
+                });
+                
+                currentY += rowHeight;
+            }
+
+            return currentY + 3;
+        }
+
+        // Modal handling
+        function setupModals() {
+            // Reports Modal
+            const reportsModal = document.getElementById('reports-modal');
+            const openReportsModal = document.getElementById('open-reports-modal');
+            const reportTabs = document.querySelectorAll('.report-tab');
+            
+            // Generate Report Button
+            const generateReportBtn = document.getElementById('generate-report-btn');
+            generateReportBtn.addEventListener('click', generateReport);
+            
+            // Reports modal opening is handled above in the main script section
+            
+            // Close modals
+            document.querySelectorAll('.close-modal').forEach(button => {
+                button.addEventListener('click', () => {
+                    document.querySelectorAll('.modal').forEach(modal => {
+                        modal.classList.remove('active');
+                        setTimeout(() => modal.classList.add('hidden'), 300);
+                    });
+                });
+            });
+            
+            // Report tabs
+            reportTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Update active tab
+                    reportTabs.forEach(t => {
+                        t.classList.remove('text-blue-600', 'border-b-2', 'border-blue-500');
+                        t.classList.add('text-gray-500', 'hover:text-gray-700');
+                    });
+                    tab.classList.remove('text-gray-500', 'hover:text-gray-700');
+                    tab.classList.add('text-blue-600', 'border-b-2', 'border-blue-500');
+                    
+                    // Show selected content
+                    const tabId = tab.getAttribute('data-tab');
+                    document.querySelectorAll('.report-content').forEach(content => {
+                        content.classList.add('hidden');
+                    });
+                    document.getElementById(`${tabId}-content`).classList.remove('hidden');
+                    
+                    // Load report data
+                    loadReports(tabId);
+                });
+            });
+        }
+        
+        // Load reports data and create charts
+        async function loadReports(reportType) {
+            try {
+                if (reportType === 'by-gender' || reportType === 'by-age') {
+                    // Load age and gender data for modal charts
+                    renderAgeGenderChartsModal();
+                    return;
+                }
+                
+                const response = await fetch('/admin/tourist-stats');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch tourist statistics');
+                }
+                
+                const data = await response.json();
+                
+                switch (reportType) {
+                    case 'by-type':
+                        renderTypeReport(data.byType);
+                        break;
+                    case 'by-nationality':
+                        renderNationalityReport(data.byNationality);
+                        break;
+                    case 'by-month':
+                        renderMonthReport(data.byMonth);
+                        break;
+                }
+            }
+             catch (error) {
+                console.error('Error loading reports:', error);
+                document.querySelectorAll('#type-table, #nationality-table, #month-table, #gender-table, #age-table').forEach(table => {
+                    table.innerHTML = `<tr><td class="py-2 px-4 border-b text-red-500" colspan="3">Error loading report data</td></tr>`;
+                });
+            }
+        }
+        
+        // Render tourist type report
+        function renderTypeReport(data) {
+            if (!data || !data.length) {
+                document.getElementById('type-table').innerHTML = `<tr><td class="py-2 px-4 border-b" colspan="3">No data available</td></tr>`;
+                return;
+            }
+            
+            // Prepare chart data
+            const labels = data.map(item => item.type);
+            const counts = data.map(item => item.count);
+            const total = counts.reduce((sum, count) => sum + count, 0);
+            
+            // Create chart
+            const ctx = document.getElementById('type-chart').getContext('2d');
+            if (window.typeChart) window.typeChart.destroy();
+            window.typeChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: counts,
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.7)',
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(153, 102, 255, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+            
+            // Update table
+            const tableBody = document.getElementById('type-table');
+            tableBody.innerHTML = '';
+            
+            data.forEach(item => {
+                const percentage = total > 0 ? ((item.count / total) * 100).toFixed(1) : '0.0';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="py-2 px-4 border-b">${item.type}</td>
+                    <td class="py-2 px-4 border-b">${item.count}</td>
+                    <td class="py-2 px-4 border-b">${percentage}%</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Render nationality report
+        function renderNationalityReport(data) {
+            if (!data || !data.length) {
+                document.getElementById('nationality-table').innerHTML = `<tr><td class="py-2 px-4 border-b" colspan="3">No data available</td></tr>`;
+                return;
+            }
+            
+            // Prepare chart data
+            const labels = data.map(item => item.nationality);
+            const counts = data.map(item => item.count);
+            const total = counts.reduce((sum, count) => sum + count, 0);
+            
+            // Create chart
+            const ctx = document.getElementById('nationality-chart').getContext('2d');
+            if (window.nationalityChart) window.nationalityChart.destroy();
+            window.nationalityChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Tourist Count',
+                        data: counts,
+                        backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Update table
+            const tableBody = document.getElementById('nationality-table');
+            tableBody.innerHTML = '';
+            
+            data.forEach(item => {
+                const percentage = total > 0 ? ((item.count / total) * 100).toFixed(1) : '0.0';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="py-2 px-4 border-b">${item.nationality}</td>
+                    <td class="py-2 px-4 border-b">${item.count}</td>
+                    <td class="py-2 px-4 border-b">${percentage}%</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Render monthly report
+        function renderMonthReport(data) {
+            if (!data || !data.length) {
+                document.getElementById('month-table').innerHTML = `<tr><td class="py-2 px-4 border-b" colspan="3">No data available</td></tr>`;
+                return;
+            }
+            
+            // Prepare chart data
+            const labels = data.map(item => item.month);
+            const counts = data.map(item => item.count);
+            
+            // Create chart
+            const ctx = document.getElementById('month-chart').getContext('2d');
+            if (window.monthChart) window.monthChart.destroy();
+            window.monthChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Tourist Count',
+                        data: counts,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Update table
+            const tableBody = document.getElementById('month-table');
+            tableBody.innerHTML = '';
+            
+            data.forEach((item, index) => {
+                const prevCount = index > 0 ? data[index - 1].count : 0;
+                const change = item.count - prevCount;
+                const changeText = index === 0 ? 'N/A' : 
+                    change > 0 ? `+${change} (↑)` : 
+                    change < 0 ? `${change} (↓)` : '0 (-)';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="py-2 px-4 border-b">${item.month}</td>
+                    <td class="py-2 px-4 border-b">${item.count}</td>
+                    <td class="py-2 px-4 border-b ${change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : ''}">${changeText}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchDashboardData();
+            setupModals();
+        });
+    </script>
+</body>
+</html>

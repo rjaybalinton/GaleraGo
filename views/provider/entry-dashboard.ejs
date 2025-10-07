@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <style>
+        /* Picture styles for user identity display */
+        .tourist-picture {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .tourist-picture-large {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 15px;
+            border: 3px solid #007bff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .picture-placeholder {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .picture-placeholder-large {
+            width: 120px;
+            height: 120px;
+            border-radius: 15px;
+            font-size: 36px;
+            border: 3px solid #007bff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        /* QR Scanner styles */
+        .qr-scanner-container {
+            position: relative;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        #qr-video {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border: 2px solid #007bff;
+            border-radius: 8px;
+        }
+        
+        .scanner-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 2px solid #ff0000;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .tourist-card {
+            border-left: 4px solid #007bff;
+            transition: all 0.3s ease;
+        }
+        
+        .verified {
+            border-left-color: #28a745 !important;
+        }
+        
+        .pending {
+            border-left-color: #ffc107 !important;
+        }
+        
+        .expired {
+            border-left-color: #dc3545 !important;
+        }
+
+        .scan-result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .scan-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .scan-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-door-open me-2"></i>Entry Provider Dashboard
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">Welcome, <%= user.username %></span>
+                <a href="/logout" class="btn btn-outline-light btn-sm">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card text-center">
+                    <i class="fas fa-users fa-2x mb-2"></i>
+                    <h3><%= stats.total_today %></h3>
+                    <p>Today's Tourists</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card text-center">
+                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                    <h3><%= stats.verified %></h3>
+                    <p>Verified</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card text-center">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <h3><%= stats.pending %></h3>
+                    <p>Pending</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card text-center">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <h3><%= stats.expired %></h3>
+                    <p>Expired</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- QR Code Scanner Section -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-qrcode me-2"></i>QR Code Scanner</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="qr-scanner-container">
+                            <video id="qr-video" autoplay muted playsinline></video>
+                            <canvas id="qr-canvas" style="display: none;"></canvas>
+                            <div class="scanner-overlay"></div>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <button id="start-scan" class="btn btn-success me-2">
+                                <i class="fas fa-play"></i> Start Scanner
+                            </button>
+                            <button id="stop-scan" class="btn btn-danger me-2" disabled>
+                                <i class="fas fa-stop"></i> Stop Scanner
+                            </button>
+                        </div>
+                        
+                        <div id="scan-result" class="scan-result"></div>
+                        
+                        <!-- Manual Entry Option -->
+                        <div class="mt-3">
+                            <h6>Manual Entry:</h6>
+                            <div class="input-group">
+                                <input type="text" id="manual-qr" class="form-control" placeholder="Enter QR code data">
+                                <button class="btn btn-primary" onclick="processManualQR()">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tourist Details Section -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-user me-2"></i>Tourist Identity</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="tourist-details">
+                            <p class="text-muted text-center">Scan a QR code to view tourist identity</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tourists List with Pictures for Identity Display -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-id-card me-2"></i>Tourist Identities</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row" id="tourists-list">
+                            <% if (tourists && tourists.length > 0) { %>
+                                <% tourists.forEach(function(tourist) { %>
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card tourist-card <%= tourist.verified_at ? 'verified' : (new Date(tourist.departure_date) < new Date() ? 'expired' : 'pending') %>">
+                                            <div class="card-body">
+                                                <div class="d-flex align-items-start">
+                                                    <!-- Tourist Picture for Identity Display -->
+                                                    <div class="me-3">
+                                                        <% if (tourist.picture && tourist.picture.trim() !== '' && tourist.picture !== 'default.jpg') { %>
+                                                            <img src="<%= tourist.picture %>" 
+                                                                 alt="<%= tourist.first_name %> <%= tourist.last_name %>" 
+                                                                 class="tourist-picture" 
+                                                                 title="Tourist Identity Picture"
+                                                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                                            <div class="picture-placeholder" style="display: none;">
+                                                                <i class="fas fa-user"></i>
+                                                            </div>
+                                                        <% } else { %>
+                                                            <div class="picture-placeholder" title="No Identity Picture">
+                                                                <i class="fas fa-user"></i>
+                                                            </div>
+                                                        <% } %>
+                                                    </div>
+                                                    
+                                                    <!-- Tourist Identity Info -->
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="card-title">
+                                                            <%= tourist.first_name %> <%= tourist.last_name %>
+                                                        </h6>
+                                                        <p class="card-text">
+                                                            <small class="text-muted">
+                                                                <i class="fas fa-envelope me-1"></i><%= tourist.email %><br>
+                                                                <i class="fas fa-phone me-1"></i><%= tourist.phone %><br>
+                                                                <i class="fas fa-calendar me-1"></i>
+                                                                <%= new Date(tourist.arrival_date).toLocaleDateString() %> - 
+                                                                <%= new Date(tourist.departure_date).toLocaleDateString() %>
+                                                            </small>
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <!-- Status/Action -->
+                                                    <div>
+                                                        <% if (tourist.verified_at) { %>
+                                                            <span class="badge bg-success">
+                                                                <i class="fas fa-check"></i> Verified
+                                                            </span>
+                                                        <% } else if (new Date(tourist.departure_date) < new Date()) { %>
+                                                            <span class="badge bg-danger">
+                                                                <i class="fas fa-times"></i> Expired
+                                                            </span>
+                                                        <% } else { %>
+                                                            <button class="btn btn-sm btn-warning" onclick="verifyTourist(<%= tourist.tourist_id %>)">
+                                                                <i class="fas fa-check"></i> Verify
+                                                            </button>
+                                                        <% } %>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <% }); %>
+                            <% } else { %>
+                                <div class="col-12">
+                                    <p class="text-center text-muted">No tourist identities found.</p>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // QR Scanner variables
+        let video = null;
+        let canvas = null;
+        let context = null;
+        let scanning = false;
+        let currentStream = null;
+        let scanInterval = null;
+        let lastScanTime = 0;
+        const SCAN_COOLDOWN = 2000;
+
+        // Initialize Scanner
+        async function initializeScanner() {
+            video = document.getElementById('qr-video');
+            canvas = document.getElementById('qr-canvas');
+            context = canvas.getContext('2d');
+            
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                
+                if (videoDevices.length === 0) {
+                    showScanResult('No cameras found on this device.', 'error');
+                    return false;
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Error initializing scanner:', error);
+                showScanResult('Error accessing camera: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // Start Camera
+        async function startCamera() {
+            try {
+                if (currentStream) {
+                    currentStream.getTracks().forEach(track => track.stop());
+                }
+                
+                const constraints = {
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'environment'
+                    }
+                };
+                
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = currentStream;
+                
+                return new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        resolve(true);
+                    };
+                });
+            } catch (error) {
+                console.error('Error starting camera:', error);
+                showScanResult('Error starting camera: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // Start Scanning
+        async function startScanning() {
+            if (scanning) return;
+            
+            const initialized = await initializeScanner();
+            if (!initialized) return;
+            
+            const cameraStarted = await startCamera();
+            if (!cameraStarted) return;
+            
+            scanning = true;
+            document.getElementById('start-scan').disabled = true;
+            document.getElementById('stop-scan').disabled = false;
+            
+            showScanResult('Scanner started. Point camera at QR code.', 'success');
+            scanInterval = setInterval(scanForQRCode, 100);
+        }
+
+        // Stop Scanning
+        function stopScanning() {
+            scanning = false;
+            
+            if (scanInterval) {
+                clearInterval(scanInterval);
+                scanInterval = null;
+            }
+            
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+            
+            document.getElementById('start-scan').disabled = false;
+            document.getElementById('stop-scan').disabled = true;
+            
+            showScanResult('Scanner stopped.', 'success');
+        }
+
+        // Scan for QR Code
+        function scanForQRCode() {
+            if (!scanning || video.readyState !== video.HAVE_ENOUGH_DATA) {
+                return;
+            }
+            
+            try {
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                    const currentTime = Date.now();
+                    if (currentTime - lastScanTime > SCAN_COOLDOWN) {
+                        lastScanTime = currentTime;
+                        console.log('QR Code detected:', code.data);
+                        processQRCode(code.data);
+                    }
+                }
+            } catch (error) {
+                // Silently handle scanning errors
+            }
+        }
+
+        // Process QR Code
+        async function processQRCode(qrData) {
+            try {
+                showScanResult('Processing QR code...', 'success');
+                
+                const response = await fetch('/provider/entry/scan-qr', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ qrData: qrData })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayTouristIdentity(result.tourist);
+                    showScanResult('Tourist identity found successfully!', 'success');
+                } else {
+                    showScanResult('Tourist identity not found: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error processing QR code:', error);
+                showScanResult('Error processing QR code: ' + error.message, 'error');
+            }
+        }
+
+        // Display Tourist Identity with Picture
+        function displayTouristIdentity(tourist) {
+            const detailsDiv = document.getElementById('tourist-details');
+            const verificationStatus = tourist.verified_at ? 
+                '<span class="badge bg-success"><i class="fas fa-check"></i> Verified</span>' :
+                '<button class="btn btn-success btn-sm" onclick="verifyTourist(' + tourist.tourist_id + ')"><i class="fas fa-check"></i> Verify Entry</button>';
+            
+            // Create picture HTML for identity display
+            let pictureHtml = '';
+            if (tourist.picture && tourist.picture.trim() !== '' && tourist.picture !== 'default.jpg') {
+                pictureHtml = `
+                    <img src="${tourist.picture}" 
+                         alt="${tourist.first_name} ${tourist.last_name}" 
+                         class="tourist-picture-large mb-3" 
+                         title="Tourist Identity Picture"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="picture-placeholder picture-placeholder-large mb-3" style="display: none;">
+                        <i class="fas fa-user"></i>
+                    </div>
+                `;
+            } else {
+                pictureHtml = `
+                    <div class="picture-placeholder picture-placeholder-large mb-3" title="No Identity Picture">
+                        <i class="fas fa-user"></i>
+                    </div>
+                `;
+            }
+            
+            detailsDiv.innerHTML = `
+                <div class="text-center">
+                    ${pictureHtml}
+                    <h4 class="text-primary">${tourist.first_name} ${tourist.last_name}</h4>
+                    <div class="text-start mt-3">
+                        <p><strong><i class="fas fa-envelope me-2"></i>Email:</strong> ${tourist.email}</p>
+                        <p><strong><i class="fas fa-phone me-2"></i>Phone:</strong> ${tourist.phone || 'N/A'}</p>
+                        <p><strong><i class="fas fa-flag me-2"></i>Nationality:</strong> ${tourist.nationality || 'N/A'}</p>
+                        <p><strong><i class="fas fa-calendar-plus me-2"></i>Arrival:</strong> ${new Date(tourist.arrival_date).toLocaleDateString()}</p>
+                        <p><strong><i class="fas fa-calendar-minus me-2"></i>Departure:</strong> ${new Date(tourist.departure_date).toLocaleDateString()}</p>
+                        <p><strong><i class="fas fa-info-circle me-2"></i>Status:</strong> ${verificationStatus}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Show Scan Result
+        function showScanResult(message, type) {
+            const resultDiv = document.getElementById('scan-result');
+            resultDiv.className = `scan-result scan-${type}`;
+            resultDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+            resultDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                resultDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Process Manual QR
+        function processManualQR() {
+            const manualInput = document.getElementById('manual-qr').value.trim();
+            if (manualInput) {
+                processQRCode(manualInput);
+                document.getElementById('manual-qr').value = '';
+            } else {
+                showScanResult('Please enter QR code data.', 'error');
+            }
+        }
+
+        // Verify Tourist
+        async function verifyTourist(touristId) {
+            try {
+                const response = await fetch(`/provider/entry/verify/${touristId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showScanResult('Tourist verified successfully!', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showScanResult('Verification failed: ' + result.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error verifying tourist:', error);
+                showScanResult('Error verifying tourist: ' + error.message, 'error');
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('start-scan').addEventListener('click', startScanning);
+        document.getElementById('stop-scan').addEventListener('click', stopScanning);
+        
+        document.getElementById('manual-qr').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                processManualQR();
+            }
+        });
+
+        // Cleanup
+        window.addEventListener('beforeunload', function() {
+            stopScanning();
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Entry dashboard with tourist identity pictures initialized');
+        });
+    </script>
+</body>
+</html>

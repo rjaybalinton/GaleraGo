@@ -1,0 +1,175 @@
+<!-- Modal -->
+<div id="modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+    <div class="bg-white p-6 shadow-lg rounded-lg w-full max-w-5xl relative">
+        <button onclick="closeModal()" class="absolute top-3 right-2 text-gray-500 hover:text-gray-800">&#10006;</button>
+        <h3 class="text-xl font-bold mb-6 text-center">Regular Tourist Registration</h3>
+
+        <form id="tourist-form" onsubmit="submitForm(event)" class="grid grid-cols-3 gap-6">
+            <div class="space-y-2">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="Enter your email" class="border p-3 rounded w-full" required>
+                
+                <label for="phone">Phone Number</label>
+                <input type="text" id="phone" placeholder="Enter your phone number" class="border p-3 rounded w-full" required>
+                
+                <label for="first-name">First Name</label>
+                <input type="text" id="first-name" placeholder="Enter your first name" class="border p-3 rounded w-full" required>
+                
+                <label for="last-name">Last Name</label>
+                <input type="text" id="last-name" placeholder="Enter your last name" class="border p-3 rounded w-full" required>
+            </div>
+
+            <div class="space-y-2">
+                <label for="age">Age</label>
+                <input type="number" id="age" placeholder="Enter your age" class="border p-3 rounded w-full" required>
+                
+                <label for="gender">Gender</label>
+                <select id="gender" class="border p-3 rounded w-full" required>
+                    <option value="" selected disabled>Choose your gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+                
+                <label for="nationality">Nationality</label>
+                <input type="text" id="nationality" placeholder="Enter your nationality" class="border p-3 rounded w-full" required>
+                
+                <label for="residence">Residence</label>
+                <input type="text" id="residence" placeholder="Enter your residence" class="border p-3 rounded w-full">
+            </div>
+
+            <div class="space-y-2">
+                <label for="companions-12">Companions Aged 12 & Above</label>
+                <input type="number" id="companions-12" placeholder="Companions aged 12 & above" class="border p-3 rounded w-full">
+                
+                <label for="companions-below-12">Companions Below 12 Years</label>
+                <input type="number" id="companions-below-12" placeholder="Companions below 12 years" class="border p-3 rounded w-full">
+              
+                <label for="arrival">Arrival Date</label>
+                <input type="date" id="arrival" class="border p-3 rounded w-full" required>
+                
+                <label for="departure">Departure Date</label>
+                <input type="date" id="departure" class="border p-3 rounded w-full" required>
+            </div>
+        </form>
+
+        <div class="mt-6 grid grid-cols-3 gap-6">
+            <div>
+                <label for="picture" class="block text-gray-700">Upload Picture</label>
+                <input type="file" id="picture" accept="image/*" class="border p-3 rounded w-full" onchange="previewImage(event)">
+                <div class="flex justify-center mt-2">
+                    <img id="preview" src="" alt="Image Preview" class="h-40 w-40 object-cover rounded hidden border">
+                </div>
+            </div>
+            
+            <div>
+                <label for="accommodation" class="block text-gray-700">Accommodation</label>
+                <select id="accommodation" class="border p-3 rounded w-full" onchange="showHotelInfo()">
+                    <option value="" selected disabled>Select Accommodation</option>
+                    <option value="Amami Beach Resort">Amami Beach Resort</option>
+                    <option value="Amihan Del Sol">Amihan Del Sol</option>
+                    <option value="Angelyn's Dive Resort">Angelyn's Dive Resort</option>
+                </select>
+                <p id="hotel-info" class="text-gray-700 mt-2"></p>
+            </div>
+        </div>
+
+        <div class="w-full flex justify-center mt-6 space-x-4">
+            <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">Submit</button>
+            <button type="reset" onclick="resetForm()" class="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500">Reset</button>
+        </div>
+    </div>
+</div>
+
+
+
+<script>
+function showForm() {
+    document.getElementById('modal').classList.remove('flex');
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.add('none');
+}
+
+function previewImage(event) {
+    const preview = document.getElementById('preview');
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.src = "";
+        preview.classList.add('hidden');
+    }
+}
+
+function showHotelInfo() {
+    const hotelInfo = document.getElementById('hotel-info');
+    const selectedHotel = document.getElementById('accommodation').value;
+    const hotelDescriptions = {
+        "Amami Beach Resort": "A tropical paradise with beachside cottages and water activities.",
+        "Amihan Del Sol": "A luxurious resort with a panoramic view of the ocean.",
+        "Angelyn's Dive Resort": "A diving resort offering snorkeling and diving tours."
+    };
+    hotelInfo.textContent = hotelDescriptions[selectedHotel] || "";
+}
+
+function submitForm(event) {
+    event.preventDefault();
+    alert("Form submitted successfully!");
+}
+
+function resetForm() {
+    document.getElementById('tourist-form').reset();
+    document.getElementById('preview').classList.add('hidden');
+    document.getElementById('hotel-info').textContent = "";
+}
+
+function submitForm(event) {
+    event.preventDefault(); // Prevent page reload
+
+    // Collect form data
+    const formData = new FormData();
+    formData.append('email', document.getElementById('email').value);
+    formData.append('phone', document.getElementById('phone').value);
+    formData.append('first_name', document.getElementById('first-name').value);
+    formData.append('last_name', document.getElementById('last-name').value);
+    formData.append('age', document.getElementById('age').value);
+    formData.append('gender', document.getElementById('gender').value);
+    formData.append('nationality', document.getElementById('nationality').value);
+    formData.append('residence', document.getElementById('residence').value);
+    formData.append('companions_12', document.getElementById('companions-12').value || 0);
+    formData.append('companions_below_12', document.getElementById('companions-below-12').value || 0);
+    formData.append('arrival_date', document.getElementById('arrival').value);
+    formData.append('departure_date', document.getElementById('departure').value);
+    formData.append('accommodation', document.getElementById('accommodation').value);
+    
+    // Handle file upload
+    const pictureFile = document.getElementById('picture').files[0];
+    if (pictureFile) {
+        formData.append('picture', pictureFile);
+    }
+
+    // Send POST request
+    fetch('/register', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert('Tourist registered successfully!');
+            closeModal();
+            document.getElementById('tourist-form').reset();
+        }
+    })
+    .catch
+
+</script>

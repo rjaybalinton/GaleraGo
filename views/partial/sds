@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puerto Galera Tourist Registration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div id="sidebar" class="w-64 bg-blue-900 text-white p-6 space-y-6 md:relative md:translate-x-0">
+            <h2 class="text-2xl font-bold">GaleraGo</h2>
+            <nav>
+                <a href="#" class="block py-2 px-4 hover:bg-blue-700 rounded">Dashboard</a>
+                <a href="/booking" class="block py-2 px-4 hover:bg-blue-700 rounded">Booking</a>
+                <a href="#" class="block py-2 px-4 hover:bg-blue-700 rounded">Island</a>
+                <a href="/navigation" class="block py-2 px-4 hover:bg-blue-700 rounded">Navigation</a>
+                <a href="#" class="block py-2 px-4 hover:bg-blue-700 rounded">About</a>
+                <a href="/logout" class="block py-2 px-4 bg-red-600 hover:bg-red-700 rounded text-center">Logout</a>
+            </nav>
+        </div>
+        
+        <!-- Content Area -->
+        <div class="flex-1 flex flex-col">
+            <header class="bg-white shadow-md p-4 flex justify-between items-center">
+                <button id="menu-btn" class="md:hidden bg-blue-900 text-white px-3 py-2 rounded">☰</button>
+                <h1 class="text-xl font-semibold">Tourist Dashboard</h1>
+            </header>
+            
+            <!-- Main Content -->
+<main class="p-6 flex flex-col items-center">
+    <h2 class="text-xl font-semibold mb-6">Select your registration type</h2>
+    <div class="flex justify-center space-x-6">
+        <div class="bg-white p-6 shadow-lg rounded-lg text-center max-w-md w-full">
+            <h3 class="text-lg font-bold">Regular Tourists</h3>
+            <p class="text-gray-600 mb-4">Accommodation booking required</p>
+            <button type="button" onclick="showForm()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Register</button>
+
+        </div>
+
+        <div class="bg-white p-6 shadow-lg rounded-lg text-center max-w-md w-full">
+            <h3 class="text-lg font-bold">Day Tourists</h3>
+            <p class="text-gray-600 mb-4">Accommodation booking required</p>
+            <button onclick="showForm()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Register</button>
+        </div>
+
+        <div class="bg-white p-6 shadow-lg rounded-lg text-center max-w-md w-full">
+            <h3 class="text-lg font-bold">Resident</h3>
+            <p class="text-gray-600 mb-4">Accommodation booking required</p>
+            <button onclick="showForm()" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">Register</button>
+        </div>
+    </div>
+    <div class="bg-white p-6 rounded-2xl shadow-lg max-w-md mx-auto mt-6 border border-gray-200">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">Visitor Types</h3>
+        <ul class="space-y-3">
+            <li class="p-4 bg-blue-50 border-l-4 border-blue-500 rounded-md">
+                <strong class="text-blue-700">Day Visitor:</strong>
+                <p class="text-gray-600 text-sm">Guests who visit for a single day without staying overnight. Limited access to certain areas.</p>
+            </li>
+            <li class="p-4 bg-green-50 border-l-4 border-green-500 rounded-md">
+                <strong class="text-green-700">Resident:</strong>
+                <p class="text-gray-600 text-sm">Individuals who live within the premises or have a long-term stay. Full access to facilities.</p>
+            </li>
+            <li class="p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded-md">
+                <strong class="text-yellow-700">Regular Visitor:</strong>
+                <p class="text-gray-600 text-sm">Frequent guests who visit multiple times but do not reside. May have membership benefits or discounts.</p>
+            </li>
+        </ul>
+    </div>
+    
+</main>
+        </div>
+    </div>
+
+    <!-- Modal -->
+<div id="modal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 hidden">
+    <div class="bg-white p-6 shadow-lg rounded-lg w-full max-w-5xl relative">
+        <button onclick="closeModal()" class="absolute top-3 right-2 text-gray-500 hover:text-gray-800">&#10006;</button>
+        <h3 class="text-xl font-bold mb-6 text-center">Regular Tourist Registration</h3>
+
+        <form id="tourist-form" action="/register2" method="POST" enctype="multipart/form-data" onsubmit="submitForm(event)" class="grid grid-cols-3 gap-6">
+
+            <div class="space-y-2">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="Enter your email" class="border p-3 rounded w-full" required>
+                
+                <label for="phone">Phone Number</label>
+                <input type="text" id="phone" placeholder="Enter your phone number" class="border p-3 rounded w-full" required>
+                
+                <label for="first-name">First Name</label>
+                <input type="text" id="first-name" placeholder="Enter your first name" class="border p-3 rounded w-full" required>
+                
+                <label for="last-name">Last Name</label>
+                <input type="text" id="last-name" placeholder="Enter your last name" class="border p-3 rounded w-full" required>
+            </div>
+
+            <div class="space-y-2">
+                <label for="age">Age</label>
+                <input type="number" id="age" placeholder="Enter your age" class="border p-3 rounded w-full" required>
+                
+                <label for="gender">Gender</label>
+                <select id="gender" class="border p-3 rounded w-full" required>
+                    <option value="" selected disabled>Choose your gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+                
+                <label for="nationality">Nationality</label>
+                <input type="text" id="nationality" placeholder="Enter your nationality" class="border p-3 rounded w-full" required>
+                
+                <label for="residence">Residence</label>
+                <input type="text" id="residence" placeholder="Enter your residence" class="border p-3 rounded w-full">
+            </div>
+
+            <div class="space-y-2">
+                <label for="companions-12">Companions Aged 12 & Above</label>
+                <input type="number" id="companions-12" placeholder="Companions aged 12 & above" class="border p-3 rounded w-full">
+                
+                <label for="companions-below-12">Companions Below 12 Years</label>
+                <input type="number" id="companions-below-12" placeholder="Companions below 12 years" class="border p-3 rounded w-full">
+              
+                <label for="arrival">Arrival Date</label>
+                <input type="date" id="arrival" class="border p-3 rounded w-full" required>
+                
+                <label for="departure">Departure Date</label>
+                <input type="date" id="departure" class="border p-3 rounded w-full" required>
+            </div>
+        </form>
+
+        <div class="mt-6 grid grid-cols-3 gap-6">
+            <div>
+                <label for="picture" class="block text-gray-700">Upload Picture</label>
+                <input type="file" id="picture" accept="image/*" class="border p-3 rounded w-full" onchange="previewImage(event)">
+                <div class="flex justify-center mt-2">
+                    <img id="preview" src="" alt="Image Preview" class="h-40 w-40 object-cover rounded hidden border">
+                </div>
+            </div>
+            
+            <div>
+                <label for="accommodation" class="block text-gray-700">Accommodation</label>
+                <select id="accommodation" class="border p-3 rounded w-full" onchange="showHotelInfo()">
+                    <option value="" selected disabled>Select Accommodation</option>
+                    <option value="Amami Beach Resort">Amami Beach Resort</option>
+                    <option value="Amihan Del Sol">Amihan Del Sol</option>
+                    <option value="Angelyn's Dive Resort">Angelyn's Dive Resort</option>
+                </select>
+                <p id="hotel-info" class="text-gray-700 mt-2"></p>
+            </div>
+        </div>
+
+        <div class="w-full flex justify-center mt-6 space-x-4">
+            <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">Submit</button>
+            <button type="reset" onclick="resetForm()" class="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500">Reset</button>
+        </div>
+    </div>
+</div>
+
+    <script>
+      function showForm() {
+    document.getElementById('modal').classList.add('show');
+    document.getElementById('modal').classList.remove('hidden');
+}
+function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+    document.getElementById('modal').classList.add('hidden');
+}
+
+    </script>
+    <script>
+        function previewImage(event) {
+            const preview = document.getElementById('preview');
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert("Please upload a valid image file.");
+                event.target.value = ""; // Reset file input
+            }
+        }
+    
+        function showHotelInfo() {
+            const hotelInfo = document.getElementById('hotel-info');
+            const selectedHotel = document.getElementById('accommodation').value;
+            const hotelDescriptions = {
+                "Amami Beach Resort": "A tropical paradise with beachside cottages and water activities.",
+                "Amihan Del Sol": "A luxurious resort with a panoramic view of the ocean.",
+                "Angelyn's Dive Resort": "A diving resort offering snorkeling and diving tours."
+            };
+            hotelInfo.textContent = hotelDescriptions[selectedHotel] || "";
+        }
+    
+        async function submitForm(event) {
+            event.preventDefault(); // Prevent page reload
+    
+            const form = document.getElementById('tourist-form');
+            const formData = new FormData(form);
+    
+            try {
+                const response = await fetch('/register2', {
+                    method: 'POST',
+                    body: formData
+                });
+    
+                if (!response.ok) {
+                    throw new Error('Registration failed');
+                }
+    
+                const result = await response.json(); // Expecting JSON response from server
+    
+                if (result.error) {
+                    alert('Error: ' + result.error);
+                } else {
+                    alert("Form submitted successfully!");
+                    form.reset();
+                    document.getElementById('preview').classList.add('hidden');
+                    document.getElementById('hotel-info').textContent = "";
+                    closeModal(); // Ensure this function exists
+                }
+            } catch (error) {
+                alert("Error submitting form: " + error.message);
+            }
+        }
+    </script>
+    
+</body>
+</html>

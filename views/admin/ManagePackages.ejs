@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Packages - Admin Panel</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+            background-color: #f5f5f5;
+            display: flex;
+        }
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background-color: #1e3a8a;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        /* Sidebar styles */
+        .sidebar {
+            width: 235px;
+            background-color: #1e3a8a;
+            color: white;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+        .sidebar-header {
+            padding: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar-menu li a {
+            display: block;
+            padding: 15px 20px;
+            color: white;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+        .sidebar-menu li a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .sidebar-menu li a.active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        .logout-btn {
+            margin: 20px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px;
+            width: calc(100% - 40px);
+            text-align: center;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+        }
+        .logout-btn:hover {
+            background-color: #c82333;
+            color: white;
+        }
+        /* Main content styles */
+        .main-content {
+            margin-left: 235px;
+            width: calc(100% - 235px);
+            padding: 0;
+            min-height: 100vh;
+        }
+        .header {
+            background-color: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 500;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .content {
+            padding: 20px;
+        }
+        /* Action buttons in header */
+        .btn-create {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: background-color 0.3s;
+        }
+        .btn-create:hover {
+            background-color: #1e40af;
+        }
+        .btn-create.island {
+            background-color: #0ea5e9;
+        }
+        .btn-create.island:hover {
+            background-color: #0284c7;
+        }
+        .btn-create.snorkeling {
+            background-color: #10b981;
+        }
+        .btn-create.snorkeling:hover {
+            background-color: #059669;
+        }
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background-color: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
+        }
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #1e3a8a;
+            color: white;
+            border-radius: 8px 8px 0 0;
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-body {
+            padding: 20px;
+        }
+        /* Form styles */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        .form-group textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        .btn {
+            background-color: #1e3a8a;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #1e40af;
+        }
+        .btn:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background-color: #6b7280;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        /* Packages table */
+        .packages-table {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .packages-table h2 {
+            margin: 0;
+            padding: 20px;
+            background-color: #1e3a8a;
+            color: white;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .package-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .activity-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .activity-island {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        .activity-snorkeling {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+        .error {
+            background-color: #fee2e2;
+            color: #dc2626;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        .success {
+            background-color: #dcfce7;
+            color: #166534;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            .mobile-menu-toggle {
+                display: block;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+                padding-top: 60px;
+            }
+            .header {
+                padding: 15px 60px 15px 20px;
+            }
+            .header h1 {
+                font-size: 20px;
+            }
+            .header-actions {
+                width: 100%;
+                margin-top: 10px;
+            }
+            .btn-create {
+                flex: 1;
+                justify-content: center;
+                min-width: 0;
+            }
+            .content {
+                padding: 15px;
+            }
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            .modal-content {
+                width: 95%;
+                margin: 10px;
+            }
+            .modal-header {
+                padding: 15px;
+            }
+            .modal-body {
+                padding: 15px;
+            }
+            table {
+                min-width: 600px;
+            }
+            th, td {
+                padding: 8px;
+                font-size: 13px;
+            }
+            .package-image {
+                width: 40px;
+                height: 40px;
+            }
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 18px;
+            }
+            .btn-create {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            .modal-content {
+                width: 98%;
+                margin: 5px;
+            }
+            table {
+                min-width: 500px;
+            }
+            th, td {
+                padding: 6px;
+                font-size: 12px;
+            }
+        }
+        /* Overlay for mobile menu */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        .sidebar-overlay.show {
+            display: block;
+        }
+        
+        /* Tab styles */
+        .tab-button.active {
+            color: #1e3a8a !important;
+            border-bottom-color: #1e3a8a !important;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Booking Details Modal Styles */
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            width: 100%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            background-color: #f9fafb;
+            border-radius: 12px 12px 0 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .close {
+            color: #6b7280;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .close:hover {
+            color: #374151;
+            background-color: #f3f4f6;
+        }
+
+        .modal-body {
+            padding: 0;
+            max-height: calc(90vh - 80px);
+            overflow-y: auto;
+        }
+
+        .booking-details {
+            padding: 24px;
+        }
+
+        .details-section {
+            margin-bottom: 24px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: white;
+        }
+
+        .details-section h3 {
+            margin: 0;
+            padding: 16px 20px;
+            background-color: #f8fafc;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            padding: 20px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .detail-item label {
+            font-weight: 600;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .detail-value {
+            color: #374151;
+            font-size: 15px;
+            word-break: break-word;
+            line-height: 1.5;
+        }
+
+        .notes-content {
+            padding: 20px;
+            background-color: #f9fafb;
+            border-radius: 6px;
+            margin: 16px 20px;
+        }
+
+        .notes-content p {
+            margin: 0;
+            line-height: 1.6;
+            color: #374151;
+        }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            .modal {
+                padding: 10px;
+            }
+
+            .modal-content {
+                max-width: 100%;
+                max-height: 95vh;
+                border-radius: 8px;
+            }
+
+            .modal-header {
+                padding: 16px 20px;
+                border-radius: 8px 8px 0 0;
+            }
+
+            .modal-header h2 {
+                font-size: 18px;
+            }
+
+            .close {
+                font-size: 24px;
+                width: 28px;
+                height: 28px;
+            }
+
+            .booking-details {
+                padding: 16px;
+            }
+
+            .details-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+                padding: 16px;
+            }
+
+            .details-section h3 {
+                padding: 12px 16px;
+                font-size: 15px;
+            }
+
+            .notes-content {
+                margin: 12px 16px;
+                padding: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .modal {
+                padding: 5px;
+            }
+
+            .modal-content {
+                max-height: 98vh;
+            }
+
+            .modal-header {
+                padding: 12px 16px;
+            }
+
+            .modal-header h2 {
+                font-size: 16px;
+            }
+
+            .booking-details {
+                padding: 12px;
+            }
+
+            .details-grid {
+                padding: 12px;
+            }
+
+            .details-section h3 {
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+
+            .notes-content {
+                margin: 8px 12px;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+        ☰
+    </button>
+
+    <!-- Sidebar Overlay -->
+    <div class="sidebar-overlay" onclick="toggleMobileMenu()"></div>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            Admin Panel
+        </div>
+        <ul class="sidebar-menu">
+            <li><a href="/admin/dashboard">Dashboard</a></li>
+            <li><a href="/admin/manage-providers">Manage Providers</a></li>
+            <li><a href="/admin/manage-location">Tourist Locations</a></li>
+            <li><a href="/admin/manage-packages" class="active">Manage Packages</a></li>
+        </ul>
+        <a href="/logout" class="logout-btn">Logout</a>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header">
+            <h1>Manage Bookings</h1>
+            <div class="header-actions">
+                <!-- No creation buttons in approval view -->
+            </div>
+        </div>
+        <div class="content">
+            <!-- Booking Tabs -->
+            <div class="packages-table">
+                <div class="tab-container" style="display: flex; border-bottom: 2px solid #e0e0e0; margin-bottom: 0;">
+                    <button class="tab-button active" onclick="switchTab('pending')" style="flex: 1; padding: 15px 20px; background: none; border: none; cursor: pointer; font-size: 16px; font-weight: 500; color: #6b7280; border-bottom: 2px solid transparent;">
+                        Awaiting Approval
+                    </button>
+                    <button class="tab-button" onclick="switchTab('confirmed')" style="flex: 1; padding: 15px 20px; background: none; border: none; cursor: pointer; font-size: 16px; font-weight: 500; color: #6b7280; border-bottom: 2px solid transparent;">
+                        Admin Approved
+                    </button>
+                </div>
+                
+                <!-- Pending Bookings Tab -->
+                <div id="pendingTab" class="tab-content active">
+                    <h2 style="margin: 0; padding: 20px; background-color: #1e3a8a; color: white;">Provider-Confirmed Bookings (Awaiting Admin Approval)</h2>
+                <div class="p-4">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="bookingSearch">Search (reference, tourist, provider)</label>
+                            <input type="text" id="bookingSearch" placeholder="e.g., PG89025119 or provider name...">
+                        </div>
+                        <div class="form-group" style="max-width:160px;">
+                            <label>&nbsp;</label>
+                            <button class="btn" onclick="applySearch()">Search</button>
+                        </div>
+                        <div class="form-group" style="max-width:160px;">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-secondary" onclick="clearSearch()">Clear</button>
+                        </div>
+                    </div>
+                </div>
+                    <div class="table-container">
+                        <div id="bookingsContainer">
+                            <div class="loading">Loading pending bookings...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Confirmed Bookings Tab -->
+                <div id="confirmedTab" class="tab-content">
+                    <h2 style="margin: 0; padding: 20px; background-color: #10b981; color: white;">Admin-Approved Bookings</h2>
+                    <div class="p-4">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="confirmedSearch">Search (reference, tourist, provider)</label>
+                                <input type="text" id="confirmedSearch" placeholder="e.g., PG89025119 or provider name...">
+                            </div>
+                            <div class="form-group" style="max-width:160px;">
+                                <label>&nbsp;</label>
+                                <button class="btn" onclick="applyConfirmedSearch()">Search</button>
+                            </div>
+                            <div class="form-group" style="max-width:160px;">
+                                <label>&nbsp;</label>
+                                <button class="btn btn-secondary" onclick="clearConfirmedSearch()">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <div id="confirmedBookingsContainer">
+                            <div class="loading">Loading confirmed bookings...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Details Modal -->
+    <div id="bookingDetailsModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2>Booking Details</h2>
+                <span class="close" onclick="closeBookingDetailsModal()">&times;</span>
+            </div>
+            <div class="modal-body" id="bookingDetailsContent">
+                <div class="loading">Loading booking details...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Remove creation modals -->
+    
+    <script>
+        // Admin approval view: list pending and confirmed bookings
+        let pendingBookings = [];
+        let confirmedBookings = [];
+        let currentSearch = '';
+        let currentConfirmedSearch = '';
+        let currentTab = 'pending';
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPendingBookings();
+            loadConfirmedBookings();
+            document.getElementById('bookingSearch').addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') applySearch();
+            });
+            document.getElementById('confirmedSearch').addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') applyConfirmedSearch();
+            });
+        });
+
+        async function loadPendingBookings() {
+            try {
+                const url = currentSearch ? `/admin/bookings/pending?q=${encodeURIComponent(currentSearch)}` : '/admin/bookings/pending';
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                pendingBookings = await response.json();
+                renderPendingBookings();
+            } catch (error) {
+                const container = document.getElementById('bookingsContainer');
+                container.innerHTML = `
+                    <div class="error">
+                        Failed to load pending bookings: ${error.message}
+                        <br>
+                        <button class="btn" onclick="loadPendingBookings()">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        function applySearch() {
+            currentSearch = (document.getElementById('bookingSearch').value || '').trim();
+            loadPendingBookings();
+        }
+
+        function clearSearch() {
+            document.getElementById('bookingSearch').value = '';
+            currentSearch = '';
+            loadPendingBookings();
+        }
+
+        function renderPendingBookings() {
+            const container = document.getElementById('bookingsContainer');
+
+            if (!pendingBookings || pendingBookings.length === 0) {
+                container.innerHTML = '<div class="loading">No pending bookings to approve.</div>';
+                return;
+            }
+
+            const tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Tourist</th>
+                            <th>Package</th>
+                            <th>Activity</th>
+                            <th>Date</th>
+                            <th>Participants</th>
+                            <th>Total</th>
+                            <th>Contact</th>
+                            <th>Provider</th>
+                            <th>Status</th>
+                            <th>Requests</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${pendingBookings.map(b => `
+                            <tr>
+                                <td>#${b.booking_reference}</td>
+                                <td>${b.first_name} ${b.last_name}</td>
+                                <td>${b.package_name}</td>
+                                <td>${b.activity_type}</td>
+                                <td>${new Date(b.booking_date).toLocaleDateString()}</td>
+                                <td>${b.number_of_participants}</td>
+                                <td>₱${parseFloat(b.total_amount || 0).toLocaleString()}</td>
+                                <td>${b.contact_number || ''}</td>
+                                <td>${b.provider_name || 'Unknown'}</td>
+                                <td>
+                                    <span class="activity-badge activity-island">
+                                        Provider Confirmed
+                                    </span>
+                                </td>
+                                <td>${b.special_requests ? `<small>${b.special_requests}</small>` : ''}</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-sm" onclick="confirmBooking(${b.id})">Approve</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = tableHTML;
+        }
+
+        async function loadConfirmedBookings() {
+            try {
+                const url = currentConfirmedSearch ? `/admin/bookings/confirmed?q=${encodeURIComponent(currentConfirmedSearch)}` : '/admin/bookings/confirmed';
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                confirmedBookings = await response.json();
+                renderConfirmedBookings();
+            } catch (error) {
+                console.error('Error loading confirmed bookings:', error);
+                const container = document.getElementById('confirmedBookingsContainer');
+                container.innerHTML = `
+                    <div class="error">
+                        Failed to load confirmed bookings: ${error.message}
+                        <br>
+                        <button class="btn" onclick="loadConfirmedBookings()">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        function applyConfirmedSearch() {
+            currentConfirmedSearch = (document.getElementById('confirmedSearch').value || '').trim();
+            loadConfirmedBookings();
+        }
+
+        function clearConfirmedSearch() {
+            document.getElementById('confirmedSearch').value = '';
+            currentConfirmedSearch = '';
+            loadConfirmedBookings();
+        }
+
+        function renderConfirmedBookings() {
+            const container = document.getElementById('confirmedBookingsContainer');
+
+            if (!confirmedBookings || confirmedBookings.length === 0) {
+                container.innerHTML = '<div class="loading">No confirmed bookings found.</div>';
+                return;
+            }
+
+            const tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Tourist</th>
+                            <th>Package</th>
+                            <th>Activity</th>
+                            <th>Date</th>
+                            <th>Participants</th>
+                            <th>Total</th>
+                            <th>Payment</th>
+                            <th>Provider</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${confirmedBookings.map(b => `
+                            <tr>
+                                <td>#${b.booking_reference}</td>
+                                <td>${b.first_name} ${b.last_name}</td>
+                                <td>${b.package_name}</td>
+                                <td>${b.activity_type}</td>
+                                <td>${new Date(b.booking_date).toLocaleDateString()}</td>
+                                <td>${b.number_of_participants}</td>
+                                <td>₱${parseFloat(b.total_amount || 0).toLocaleString()}</td>
+                                <td>
+                                    <span class="activity-badge ${b.payment_method === 'gcash' ? 'activity-snorkeling' : 'activity-island'}">
+                                        ${b.payment_method === 'gcash' ? 'GCash' : 'Cash'}
+                                        ${b.payment_reference ? `<br><small>Ref: ${b.payment_reference}</small>` : ''}
+                                    </span>
+                                </td>
+                                <td>${b.provider_name || 'Unknown'}</td>
+                                <td>
+                                    <span class="activity-badge activity-snorkeling">
+                                        Admin Approved
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-sm btn-primary" onclick="viewBookingDetails(${b.id})">View Details</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = tableHTML;
+        }
+
+        function switchTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(`${tab}Tab`).classList.add('active');
+            
+            currentTab = tab;
+        }
+
+        async function confirmBooking(bookingId) {
+            if (!confirm('Approve this booking? This will finalize the transaction between user and service provider.')) return;
+            try {
+                const response = await fetch(`/admin/bookings/${bookingId}/confirm`, { method: 'POST' });
+                const result = await response.json();
+                if (!response.ok) {
+                    alert(result.error || 'Failed to confirm booking');
+                    return;
+                }
+                // Refresh both lists
+                await loadPendingBookings();
+                await loadConfirmedBookings();
+            } catch (error) {
+                alert('Failed to confirm booking. Please try again.');
+            }
+        }
+
+        // Booking Details Modal Functions
+        async function viewBookingDetails(bookingId) {
+            const modal = document.getElementById('bookingDetailsModal');
+            const content = document.getElementById('bookingDetailsContent');
+            
+            // Show modal
+            modal.style.display = 'flex';
+            content.innerHTML = '<div class="loading">Loading booking details...</div>';
+            
+            try {
+                const response = await fetch(`/admin/bookings/${bookingId}/details`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const bookingDetails = await response.json();
+                renderBookingDetails(bookingDetails);
+            } catch (error) {
+                console.error('Error loading booking details:', error);
+                content.innerHTML = `
+                    <div class="error">
+                        <p>Error loading booking details: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderBookingDetails(booking) {
+            const content = document.getElementById('bookingDetailsContent');
+            
+            const detailsHTML = `
+                <div class="booking-details">
+                    <div class="details-section">
+                        <h3>📋 Booking Information</h3>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <label>Booking Reference:</label>
+                                <span class="detail-value">#${booking.booking_reference}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Booking Date:</label>
+                                <span class="detail-value">${new Date(booking.booking_date).toLocaleDateString()}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Created At:</label>
+                                <span class="detail-value">${new Date(booking.created_at).toLocaleString()}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Status:</label>
+                                <span class="status-badge status-confirmed">${booking.status}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="details-section">
+                        <h3>👤 Customer Information</h3>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <label>Name:</label>
+                                <span class="detail-value">${booking.first_name} ${booking.last_name}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Email:</label>
+                                <span class="detail-value">${booking.email || 'Not provided'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Contact:</label>
+                                <span class="detail-value">${booking.contact_number || 'Not provided'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="details-section">
+                        <h3>🎯 Activity Details</h3>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <label>Package Name:</label>
+                                <span class="detail-value">${booking.package_name}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Activity Type:</label>
+                                <span class="detail-value">${booking.activity_type}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Description:</label>
+                                <span class="detail-value">${booking.description || 'No description available'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Duration:</label>
+                                <span class="detail-value">${booking.duration || 'Not specified'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Participants:</label>
+                                <span class="detail-value">${booking.number_of_participants} person(s)</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Total Amount:</label>
+                                <span class="detail-value">₱${parseFloat(booking.total_amount || 0).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="details-section">
+                        <h3>💳 Payment Information</h3>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <label>Payment Method:</label>
+                                <span class="detail-value">
+                                    <span class="activity-badge ${booking.payment_method === 'gcash' ? 'activity-snorkeling' : 'activity-island'}">
+                                        ${booking.payment_method === 'gcash' ? 'GCash' : 'Cash'}
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="details-section">
+                        <h3>🏢 Service Provider</h3>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <label>Provider Name:</label>
+                                <span class="detail-value">${booking.provider_name || 'Unknown'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Provider Contact:</label>
+                                <span class="detail-value">${booking.provider_contact || 'Not available'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="details-section">
+                        <h3>⏰ Activity Timeline</h3>
+                        <div class="details-grid">
+                            <div class="detail-item">
+                                <label>Provider Confirmed:</label>
+                                <span class="detail-value">${booking.provider_confirmed_at ? new Date(booking.provider_confirmed_at).toLocaleString() : 'Not confirmed'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Admin Approved:</label>
+                                <span class="detail-value">${booking.admin_confirmed_at ? new Date(booking.admin_confirmed_at).toLocaleString() : 'Not approved'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Activity Completed:</label>
+                                <span class="detail-value">${booking.activity_completed_at ? new Date(booking.activity_completed_at).toLocaleString() : 'Not completed'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label>Activity Status:</label>
+                                <span class="detail-value">
+                                    ${booking.activity_completed ? 
+                                        '<span class="status-badge status-confirmed">✅ Completed</span>' : 
+                                        '<span class="status-badge status-pending">⏳ Pending</span>'
+                                    }
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${booking.notes ? `
+                    <div class="details-section">
+                        <h3>📝 Additional Notes</h3>
+                        <div class="notes-content">
+                            <p>${booking.notes}</p>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            content.innerHTML = detailsHTML;
+        }
+
+        function closeBookingDetailsModal() {
+            const modal = document.getElementById('bookingDetailsModal');
+            modal.style.display = 'none';
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('bookingDetailsModal');
+            if (event.target === modal) {
+                closeBookingDetailsModal();
+            }
+        }
+
+    </script>
+</body>
+</html>

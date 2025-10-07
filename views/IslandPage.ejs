@@ -1,0 +1,2535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Island Adventures - Puerto Galera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" 
+          onerror="console.warn('Failed to load Leaflet CSS from CDN')" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"
+            onerror="console.warn('Failed to load Leaflet JS from CDN')"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"
+            onerror="console.warn('Failed to load Leaflet Routing Machine from CDN')"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Your existing styles remain the same */
+        #map {
+            height: 500px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            border: 3px solid #1e3a8a;
+        }
+
+        .sidebar-active {
+            transform: translateX(0) !important;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #1e3a8a;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .skeleton-loader {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% {
+                background-position: 200% 0;
+            }
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .package-card {
+            transition: all 0.3s ease;
+        }
+
+        .package-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .modal {
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.show {
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-gradient {
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+        }
+
+        .badge-island {
+            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        }
+
+        .badge-snorkeling {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .quick-access-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .quick-access-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(135deg, rgba(255,255,255,1), rgba(255,255,255,0.9));
+        }
+
+        .success-checkmark {
+            animation: checkmark 0.6s ease-in-out;
+        }
+
+        @keyframes checkmark {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .booking-history-card {
+            transition: all 0.3s ease;
+        }
+
+        .booking-history-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-pending {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        .status-confirmed {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .status-completed {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        }
+
+        .status-cancelled {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Star Rating Styles */
+        .star-rating {
+            display: flex;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .star {
+            font-size: 2rem;
+            color: #ddd;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .star:hover,
+        .star.active {
+            color: #ffd700;
+        }
+
+        .star.hover {
+            color: #ffed4e;
+        }
+
+        /* Review Card Styles */
+        .review-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #3b82f6;
+        }
+
+        .review-stars {
+            color: #ffd700;
+            margin-right: 8px;
+        }
+
+        .review-date {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+
+        .review-comment {
+            margin-top: 12px;
+            line-height: 1.6;
+            color: #374151;
+        }
+
+
+        /* Your existing styles remain the same */
+.reviewModal {
+    z-index: 1001; /* Ensure this is higher than other modals */
+}
+
+.booking-history-card:hover {
+    z-index: 1000; /* Lower than the review modal */
+}
+
+.cancelBookingModal {
+    z-index: 999; /* Example of other modals */
+}
+
+.reviewsModal {
+    z-index: 999; /* Example of other modals */
+}
+
+/* Other styles for modals */
+.modal {
+    backdrop-filter: blur(5px);
+}
+
+.modal.show {
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-50px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+        
+    </style>
+</head>
+
+<body class="bg-gray-100">
+    <!-- Your existing sidebar and header code remains the same -->
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div id="sidebar" class="w-64 bg-blue-900 text-white p-5 space-y-6 fixed inset-y-0 left-0 transform -translate-x-full transition-all duration-300 ease-in-out md:relative md:translate-x-0 z-50">
+            <h2 class="text-2xl font-bold">GaleraGo</h2>
+            <nav class="space-y-2">
+                <a href="/user/home" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">Home</a>
+                <a href="/booking" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">Booking</a>
+                <a href="/island" class="block py-3 px-4 bg-blue-800 hover:bg-blue-600 rounded-md font-semibold">Island</a>
+                <a href="/navigation" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">Navigation</a>
+                <a href="/UserFAQ" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">FAQ</a>
+                <a href="/logout" class="block py-3 px-4 bg-red-600 hover:bg-red-700 rounded-md text-center font-semibold">Logout</a>
+            </nav>
+        </div>
+
+        <!-- Mobile menu button -->
+        <button id="mobile-menu-btn" class="md:hidden fixed top-4 left-4 z-50 bg-blue-900 text-white p-2 rounded-md">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-lg border-b border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center py-4">
+                        <div class="flex items-center">
+                            <h1 class="text-2xl font-bold text-gray-900">🏝️ Island Adventures</h1>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <button onclick="openBookingHistory()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md font-semibold transition-colors">
+                                <i class="fas fa-history mr-2"></i>My Bookings
+                            </button>
+                            
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main class="flex-1 overflow-y-auto custom-scrollbar bg-gray-50">
+                <!-- Hero Section -->
+                <section class="hero-gradient text-white py-16 relative overflow-hidden">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="text-center mb-12">
+                            <h1 class="text-4xl md:text-6xl font-bold mb-4">Discover Paradise</h1>
+                            <p class="text-xl md:text-2xl mb-8 opacity-90">Experience the best of Puerto Galera with our amazing island adventures</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                            <div class="quick-access-card rounded-2xl p-8 text-center cursor-pointer" onclick="filterPackages('Island Hopping')">
+                                <div class="text-6xl mb-4">🏝️</div>
+                                <h3 class="text-2xl font-bold text-gray-800 mb-3">Island Hopping</h3>
+                                <p class="text-gray-600 mb-4">Explore multiple beautiful islands in one amazing adventure</p>
+                                <div class="bg-blue-600 text-white px-6 py-3 rounded-full font-semibold inline-block hover:bg-blue-700 transition-colors">
+                                    View Island Hopping Tours
+                                </div>
+                            </div>
+
+                            <div class="quick-access-card rounded-2xl p-8 text-center cursor-pointer" onclick="filterPackages('Snorkeling')">
+                                <div class="text-6xl mb-4">🤿</div>
+                                <h3 class="text-2xl font-bold text-gray-800 mb-3">Snorkeling</h3>
+                                <p class="text-gray-600 mb-4">Dive into crystal clear waters and discover marine life</p>
+                                <div class="bg-green-600 text-white px-6 py-3 rounded-full font-semibold inline-block hover:bg-green-700 transition-colors">
+                                    View Snorkeling Tours
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Packages Section -->
+                <section class="py-12">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="text-center mb-12">
+                            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Choose Your Adventure</h2>
+                            <p class="text-xl text-gray-600">Select from our amazing collection of island experiences and book instantly!</p>
+                        </div>
+
+                        <div id="packagesContainer">
+                            <div class="flex justify-center items-center py-16">
+                                <div class="loading-spinner"></div>
+                                <span class="ml-4 text-gray-600 text-lg">Loading amazing adventures...</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Floating Action Button for Booking History -->
+    <button class="fab" onclick="openBookingHistory()" title="View My Bookings">
+        <i class="fas fa-history text-xl"></i>
+    </button>
+
+    <!-- NEW: Review Modal -->
+    <div id="reviewModal" class="modal fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-screen overflow-y-auto">
+                <!-- Modal Header -->
+                <div class="card-gradient text-white p-6 rounded-t-lg">
+                    <div class="flex justify-between items-center">
+                        <h2 id="reviewModalTitle" class="text-2xl font-bold">Rate Your Experience</h2>
+                        <button onclick="closeReviewModal()" class="text-white hover:text-gray-200 transition-colors">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-6">
+                    <div id="reviewMessageContainer"></div>
+                    
+                    <!-- Package Info -->
+                    <div id="reviewPackageInfo" class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <!-- Package info will be populated by JavaScript -->
+                    </div>
+
+                    <!-- Review Form -->
+                    <form id="reviewForm" class="space-y-6">
+                        <input type="hidden" id="reviewBookingId" name="booking_id">
+                        <input type="hidden" id="reviewPackageId" name="package_id">
+
+                        <!-- Star Rating -->
+                        <div>
+                            <label for="ratingValue" class="block text-sm font-medium text-gray-700 mb-3">
+                                <i class="fas fa-star mr-2"></i>How would you rate this experience? *
+                            </label>
+                            <div class="star-rating" id="starRating" role="radiogroup" aria-labelledby="ratingValue">
+                                <span class="star" data-rating="1" role="radio" aria-label="1 star" tabindex="0">★</span>
+                                <span class="star" data-rating="2" role="radio" aria-label="2 stars" tabindex="0">★</span>
+                                <span class="star" data-rating="3" role="radio" aria-label="3 stars" tabindex="0">★</span>
+                                <span class="star" data-rating="4" role="radio" aria-label="4 stars" tabindex="0">★</span>
+                                <span class="star" data-rating="5" role="radio" aria-label="5 stars" tabindex="0">★</span>
+                            </div>
+                            <input type="hidden" id="ratingValue" name="rating" required>
+                            <p class="text-sm text-gray-500 mt-2">Click on the stars to rate your experience</p>
+                        </div>
+
+                        <!-- Comment -->
+                        <div>
+                            <label for="reviewComment" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-comment mr-2"></i>Share your experience (Optional)
+                            </label>
+                            <textarea id="reviewComment" name="comment" rows="4" 
+                                      placeholder="Tell us about your experience... What did you enjoy most? Any suggestions for improvement?"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+
+                        <!-- Submit Buttons -->
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <button type="submit" id="submitReview" 
+                                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-md font-semibold transition-colors">
+                                <i class="fas fa-paper-plane mr-2"></i>Submit Review
+                            </button>
+                            <button type="button" onclick="closeReviewModal()" 
+                                    class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-md font-semibold transition-colors">
+                                <i class="fas fa-times mr-2"></i>Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Updated Reviews Display Modal -->
+    <div id="reviewsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                <!-- Modal Header -->
+                <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6 rounded-t-lg">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 id="reviewsModalTitle" class="text-2xl font-bold"></h2>
+                            <p id="reviewsModalStats" class="text-sm text-blue-100 mt-1"></p>
+                        </div>
+                        <button onclick="closeReviewsModal()" class="text-white hover:text-blue-200 transition-colors p-2 rounded-full hover:bg-blue-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-6">
+                    <!-- Reviews Filter -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-gray-600">Filter by:</span>
+                            <select id="reviewsFilter" class="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="all">All Reviews</option>
+                                <option value="5">5 Stars</option>
+                                <option value="4">4 Stars</option>
+                                <option value="3">3 Stars</option>
+                                <option value="2">2 Stars</option>
+                                <option value="1">1 Star</option>
+                            </select>
+                        </div>
+                        <div class="text-sm text-gray-500" id="reviewCount"></div>
+                    </div>
+
+                    <!-- Reviews Container -->
+                    <div id="reviewsContainer" class="space-y-4">
+                        <!-- Reviews will be loaded here -->
+                    </div>
+
+                    <!-- No Reviews Message -->
+                    <div id="noReviewsMessage" class="hidden text-center py-8">
+                        <div class="text-gray-400 mb-3">
+                            <i class="fas fa-star text-6xl"></i>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-600">No Reviews Yet</h3>
+                        <p class="text-gray-500 mt-1">This package hasn't received any reviews yet.</p>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="border-t border-gray-200 p-4 bg-gray-50 rounded-b-lg">
+                    <button onclick="closeReviewsModal()" class="w-full bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-md transition-colors">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking History Modal -->
+    <div id="bookingHistoryModal" class="modal fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-screen overflow-y-auto">
+                <!-- Modal Header -->
+                <div class="card-gradient text-white p-6 rounded-t-lg">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center">
+                        <h2 class="text-2xl font-bold">
+                            <i class="fas fa-history mr-2"></i>My Booking History
+                        </h2>
+                        </div>
+                        <button onclick="closeBookingHistory()" class="text-white hover:text-gray-200 transition-colors">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-6">
+
+                    <!-- Filter Tabs -->
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <button onclick="filterBookingHistory('all')" class="history-filter-btn bg-blue-600 text-white px-4 py-2 rounded-md font-semibold transition-colors">
+                            All Bookings
+                        </button>
+                        <button onclick="filterBookingHistory('Island Hopping')" class="history-filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-semibold transition-colors">
+                            🏝️ Island Hopping
+                        </button>
+                        <button onclick="filterBookingHistory('Snorkeling')" class="history-filter-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-md font-semibold transition-colors">
+                            🤿 Snorkeling
+                        </button>
+                    </div>
+
+                    <!-- Booking History Container -->
+                    <div id="bookingHistoryContainer">
+                        <div class="flex justify-center items-center py-16">
+                            <div class="loading-spinner"></div>
+                            <span class="ml-4 text-gray-600 text-lg">Loading your booking history...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancellation Reason Modal -->
+    <div id="cancelBookingModal" class="modal fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-screen overflow-y-auto">
+                <!-- Modal Header -->
+                <div class="card-gradient text-white p-6 rounded-t-lg">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-bold">Cancel Booking</h2>
+                        <button onclick="closeCancelModal()" class="text-white hover:text-gray-200 transition-colors">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-6">
+                    <!-- Success Message (hidden initially) -->
+                    <div id="successMessage" class="hidden bg-green-100 text-green-700 px-4 py-3 rounded mb-4">
+                        <div class="font-semibold">Your booking has been successfully canceled!</div>
+                    </div>
+
+                    <!-- Reason Selection -->
+                    <div id="reasonContainer">
+                        <!-- Dropdown or Custom Reason -->
+                        <div class="mb-4">
+                            <label for="cancellationReason" class="block text-sm font-medium text-gray-700 mb-2">Reason for Cancellation *</label>
+                            <select id="cancellationReason" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                <option value="">Choose a reason...</option>
+                                <option value="Personal reasons">Personal reasons</option>
+                                <option value="Not satisfied with the package">Not satisfied with the package</option>
+                                <option value="Found a better deal">Found a better deal</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <!-- Custom Reason (only shown when 'Other' is selected) -->
+                        <div id="customReasonContainer" class="hidden mb-4">
+                            <label for="customCancellationReason" class="block text-sm font-medium text-gray-700 mb-2">Please provide your reason</label>
+                            <textarea id="customCancellationReason" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="Type your reason here..."></textarea>
+                        </div>
+
+                        <!-- Submit Button for Cancellation -->
+                        <div class="flex justify-between items-center mt-6">
+                            <button onclick="submitCancellation()" class="mt-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md">
+                                Cancel Booking
+                            </button>
+                            <button onclick="closeCancelModal()" class="bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-md font-semibold transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="bookingModal" class="modal fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-screen overflow-y-auto">
+                <!-- Modal Header -->
+                <div class="card-gradient text-white p-6 rounded-t-lg">
+                    <div class="flex justify-between items-center">
+                        <h2 id="modalTitle" class="text-2xl font-bold">Book Your Adventure</h2>
+                        <button onclick="closeBookingModal()" class="text-white hover:text-gray-200 transition-colors">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-6">
+                    <div id="messageContainer"></div>
+                    
+                    <!-- Booking Summary -->
+                    <div id="bookingSummary" class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <!-- Summary will be populated by JavaScript -->
+                    </div>
+                    
+                    <!-- Booking Form -->
+                    <form id="bookingForm" class="space-y-6">
+                        <input type="hidden" id="packageId" name="package_id">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="bookingDate" class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-calendar mr-2"></i>Preferred Date *
+                                </label>
+                                <input type="date" id="bookingDate" name="booking_date" required 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label for="participants" class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-users mr-2"></i>Number of Participants *
+                                </label>
+                                <select id="participants" name="number_of_participants" required onchange="updateTotal()"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Select participants</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="contactNumber" class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-phone mr-2"></i>Contact Number *
+                                </label>
+                                <input type="tel" id="contactNumber" name="contact_number" placeholder="09123456789" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label for="emergencyContact" class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-user-shield mr-2"></i>Emergency Contact Name
+                                </label>
+                                <input type="text" id="emergencyContact" name="emergency_contact" placeholder="Full name"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="emergencyPhone" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-phone-alt mr-2"></i>Emergency Contact Number
+                            </label>
+                            <input type="tel" id="emergencyPhone" name="emergency_phone" placeholder="09123456789"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label for="specialRequests" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-comment mr-2"></i>Special Requests or Notes
+                            </label>
+                            <textarea id="specialRequests" name="special_requests" rows="3" 
+                                      placeholder="Any special requirements, dietary restrictions, or additional information..."
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+
+                        <!-- Payment Method Selection -->
+                        <div>
+                            <fieldset>
+                                <legend class="block text-sm font-medium text-gray-700 mb-3">
+                                <i class="fas fa-credit-card mr-2"></i>Payment Method *
+                                </legend>
+                            <div class="space-y-3">
+                                <div class="flex items-center">
+                                    <input type="radio" id="paymentCash" name="payment_method" value="cash" required 
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                                    <label for="paymentCash" class="ml-3 flex items-center">
+                                        <i class="fas fa-money-bill-wave text-green-600 mr-2"></i>
+                                        <span class="text-sm font-medium text-gray-700">Cash Payment</span>
+                                        <span class="ml-2 text-xs text-gray-500">(Pay on arrival)</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="flex items-center">
+                                    <input type="radio" id="paymentGCash" name="payment_method" value="gcash" required 
+                                           class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 cursor-pointer">
+                                    <label for="paymentGCash" class="ml-3 flex items-center cursor-pointer select-none">
+                                        <i class="fas fa-mobile-alt text-blue-600 mr-2"></i>
+                                        <span class="text-sm font-medium text-gray-700">GCash Payment</span>
+                                        <span class="ml-2 text-xs text-gray-500">(Pay online)</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- GCash Payment Information (shown when GCash is selected) -->
+                            <div id="gcashPaymentInfo" class="hidden mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div class="flex items-start">
+                                    <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
+                                    <div class="flex-1">
+                                        <h4 class="text-sm font-semibold text-blue-800 mb-2">GCash Payment Instructions</h4>
+                                        <div id="gcashDetails" class="text-sm text-blue-700">
+                                            <!-- GCash details will be populated by JavaScript -->
+                                        </div>
+                                        
+                                        <!-- Payment Reference Number Input -->
+                                        <div id="paymentReference" class="hidden mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                            <div class="flex items-center mb-2">
+                                                <i class="fas fa-receipt text-yellow-600 mr-2"></i>
+                                                <span class="text-sm font-semibold text-yellow-800">Payment Reference Number</span>
+                                            </div>
+                                            <div class="text-sm text-yellow-700">
+                                                <p class="mb-2">After making your GCash payment, enter the reference number below:</p>
+                                                <label for="paymentRefInput" class="sr-only">GCash Payment Reference Number</label>
+                                                <input type="text" 
+                                                       id="paymentRefInput" 
+                                                       name="payment_reference"
+                                                       placeholder="Enter your GCash payment reference number" 
+                                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                                                <p class="text-xs mt-1 text-yellow-600">This is required to confirm your payment</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Payment Instructions -->
+                                        <div class="mt-3 p-3 bg-blue-100 rounded-lg">
+                                            <p class="text-xs text-blue-600">
+                                                <strong>Payment Steps:</strong><br>
+                                                1. Send the exact amount to the GCash number above<br>
+                                                2. Keep your payment receipt as proof<br>
+                                                3. Enter the payment reference number from your GCash transaction below<br>
+                                                4. Submit your booking to complete the process
+                                            </p>
+                                        </div>
+                                        
+                                                    </div>
+                                                </div>
+                                            </div>
+                            </fieldset>
+                        </div>
+
+                        <!-- Total Amount -->
+                        <div class="bg-blue-50 rounded-lg p-4">
+                            <div class="flex justify-between items-center text-lg font-bold text-blue-900">
+                                <span>Total Amount:</span>
+                                <span id="totalAmount">₱0.00</span>
+                            </div>
+                        </div>
+                        <input type="hidden" id="totalAmountInput" name="total_amount">
+
+                        <!-- Submit Buttons -->
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <button type="submit" id="submitBooking" 
+                                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-md font-semibold transition-colors">
+                                <i class="fas fa-check mr-2"></i>Confirm Booking
+                        </button>
+                        <button type="button" onclick="closeBookingModal()" 
+                                class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-md font-semibold transition-colors">
+                            <i class="fas fa-times mr-2"></i>Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+   <script>
+    let packages = [];
+    let selectedPackage = null;
+    let currentFilter = 'all';
+    let bookingHistory = [];
+    let currentHistoryFilter = 'all';
+    let selectedBookingId = null;
+    let selectedReviewBooking = null;
+    let reviewHandlersSetup = false;
+    let formHandlersSetup = false;
+    let globalHandlersSetup = false;
+    let searchTimeout = null;
+
+    // Setup mobile menu handler
+    function setupMobileMenuHandler() {
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        if (mobileMenuBtn) {
+            // Remove existing event listener by cloning
+            const newMobileMenuBtn = mobileMenuBtn.cloneNode(true);
+            mobileMenuBtn.parentNode.replaceChild(newMobileMenuBtn, mobileMenuBtn);
+            
+            // Add event listener to new element
+            const newElement = document.getElementById('mobile-menu-btn');
+            newElement.addEventListener('click', function() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('sidebar-active');
+    });
+        }
+    }
+
+    // Load packages on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log("🔹 DOMContentLoaded event fired");
+        // User data will be available from server-side rendering
+        console.log("🔹 User data from server: [Available via EJS template]");
+        console.log("🔹 packagesContainer element:", document.getElementById('packagesContainer'));
+        console.log("🔹 About to call loadPackagesWithStats()");
+        
+        // Load packages first, then setup other handlers
+        loadPackagesWithStats().then(() => {
+            console.log("✅ Packages loaded, setting up handlers");
+            console.log("🔹 About to setup form handlers...");
+            setupMobileMenuHandler();
+            setupFormHandlers();
+            setupReviewHandlers();
+            setupCancellationHandlers();
+            setupGlobalHandlers();
+            setupSearchFunctionality();
+            setMinDate();
+            console.log("✅ All handlers setup completed");
+        }).catch(error => {
+            console.error("❌ Error loading packages:", error);
+        });
+    });
+
+    // Load packages function (working version from provided code)
+    async function loadPackagesWithStats() {
+        try {
+            console.log("🔹 Loading packages...");
+            
+            // Clear loading spinner first
+            const container = document.getElementById('packagesContainer');
+            if (container) {
+                container.innerHTML = '<div class="flex justify-center items-center py-16"><div class="loading-spinner"></div><span class="ml-4 text-gray-600 text-lg">Loading amazing adventures...</span></div>';
+            }
+            
+            // Load packages from API
+            const response = await fetch('/api/packages/public');
+            if (!response.ok) {
+                throw new Error('Failed to load packages');
+            }
+            
+            packages = await response.json();
+            console.log("✅ Packages loaded:", packages.length, packages);
+            
+            // Check if packages array is empty
+            if (!packages || packages.length === 0) {
+                console.log("❌ No packages found!");
+                container.innerHTML = '<div class="text-center py-16"><div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">No packages available at the moment.</div></div>';
+                return;
+            }
+            
+            // Render packages
+            renderPackages();
+            
+        } catch (error) {
+            console.error('❌ Error loading packages:', error);
+            const container = document.getElementById('packagesContainer');
+            if (container) {
+                container.innerHTML = '<div class="text-center py-16"><div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">Failed to load packages. Please refresh the page.</div></div>';
+            }
+            throw error; // Re-throw to handle in DOMContentLoaded
+        }
+    }
+
+    // Render packages function (working version from provided code)
+    function renderPackages() {
+        console.log("🔹 Rendering packages...", packages);
+        console.log("🔹 Packages array length:", packages ? packages.length : 'undefined');
+        console.log("🔹 Current filter:", currentFilter);
+        
+        const container = document.getElementById('packagesContainer');
+        if (!container) {
+            console.error("❌ packagesContainer element not found!");
+            return;
+        }
+        
+        if (!packages || packages.length === 0) {
+            console.log("❌ No packages to render!");
+            container.innerHTML = '<div class="text-center py-16"><p class="text-gray-600 text-lg">No packages available.</p></div>';
+            return;
+        }
+        
+        let filteredPackages = packages;
+        if (currentFilter !== 'all') {
+            filteredPackages = packages.filter(pkg => pkg.activity_type === currentFilter);
+        }
+        
+        console.log("🔹 Filtered packages length:", filteredPackages.length);
+        
+        if (filteredPackages.length === 0) {
+            container.innerHTML = '<div class="text-center py-16"><p class="text-gray-600 text-lg">No packages found for the selected filter.</p></div>';
+            return;
+        }
+
+        // Create packages HTML (working version from provided code)
+        const packagesHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                ${filteredPackages.map(pkg => `
+                    <div class="package-card bg-white rounded-lg shadow-lg overflow-hidden">
+                        <div class="relative">
+                            <img src="/uploads/packages/${pkg.image || 'default-package.jpg'}" 
+                                 alt="${pkg.name}" class="w-full h-64 object-cover">
+                            <div class="absolute top-4 right-4">
+                                <span class="badge-${pkg.activity_type === 'Island Hopping' ? 'island' : 'snorkeling'} text-white px-3 py-1 rounded-full text-sm font-semibold">
+                                    ${pkg.activity_type === 'Island Hopping' ? '🏝️' : '🤿'} ${pkg.activity_type}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">${pkg.name}</h3>
+                            <p class="text-gray-600 mb-4 line-clamp-3">${pkg.description || 'An amazing adventure awaits you!'}</p>
+                            
+                            <div class="grid grid-cols-2 gap-4 mb-4 text-sm text-gray-600">
+                                <div class="flex items-center">
+                                    <i class="fas fa-clock mr-2 text-blue-500"></i>
+                                    <span>${pkg.duration} day${pkg.duration > 1 ? 's' : ''}</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-users mr-2 text-blue-500"></i>
+                                    <span>Max ${pkg.max_participants} people</span>
+                                </div>
+                            </div>
+                            
+                            ${pkg.includes ? `
+                                <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                                    <h4 class="font-semibold text-gray-900 mb-1 text-sm">What's Included:</h4>
+                                    <p class="text-gray-600 text-sm">${pkg.includes}</p>
+                                </div>
+                            ` : ''}
+                            
+                            <!-- Rating and Reviews Section -->
+                            <div class="mb-4">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="flex items-center mr-2">
+                                            <span class="text-yellow-400 text-lg">${'★'.repeat(Math.floor(parseFloat(pkg.average_rating || 0)))}${'☆'.repeat(5 - Math.floor(parseFloat(pkg.average_rating || 0)))}</span>
+                                        </div>
+                                        <span class="text-sm text-gray-600">${parseFloat(pkg.average_rating || 0).toFixed(1)} (${parseInt(pkg.review_count || 0)} review${parseInt(pkg.review_count || 0) !== 1 ? 's' : ''})</span>
+                                    </div>
+                                    <button onclick="viewPackageReviews(${pkg.id})" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                        <i class="fas fa-star mr-1"></i>View Reviews
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="text-2xl font-bold text-blue-600">₱${parseFloat(pkg.price).toLocaleString()}</span>
+                                    <span class="text-gray-500 text-sm">per person</span>
+                                </div>
+                                <button onclick="openBookingModal(${pkg.id})" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-semibold transition-colors">
+                                    <i class="fas fa-calendar-plus mr-2"></i>Book Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+        container.innerHTML = packagesHTML;
+        console.log("✅ Packages rendered successfully");
+    }
+
+    // Optimized rendering function using DocumentFragment for better performance
+    function renderPackagesOptimized(filteredPackages, container) {
+        const fragment = document.createDocumentFragment();
+        const gridContainer = document.createElement('div');
+        gridContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8';
+        
+        // Process packages in batches for better performance
+        const batchSize = 6;
+        let currentIndex = 0;
+        
+        function processBatch() {
+            const endIndex = Math.min(currentIndex + batchSize, filteredPackages.length);
+            
+            for (let i = currentIndex; i < endIndex; i++) {
+                const pkg = filteredPackages[i];
+                const cardElement = createPackageCard(pkg);
+                gridContainer.appendChild(cardElement);
+            }
+            
+            currentIndex = endIndex;
+            
+            if (currentIndex < filteredPackages.length) {
+                // Process next batch
+                requestAnimationFrame(processBatch);
+            } else {
+                // All packages processed, update DOM
+                fragment.appendChild(gridContainer);
+                container.innerHTML = '';
+                container.appendChild(fragment);
+                console.log("✅ Packages rendered successfully with optimized method");
+            }
+        }
+        
+        processBatch();
+    }
+
+    // Create individual package card element
+    function createPackageCard(pkg) {
+            const avgRating = parseFloat(pkg.average_rating) || 0;
+            const reviewCount = parseInt(pkg.review_count) || 0;
+            const fullStars = Math.floor(avgRating);
+            const emptyStars = Math.max(0, 5 - fullStars);
+            
+        // Create star rating HTML
+        const starsHTML = '★'.repeat(fullStars) + '☆'.repeat(emptyStars);
+        
+        // Create card element
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1';
+        
+        // Get activity icon and color based on type
+        const activityIcon = getActivityIcon(pkg.activity_type);
+        const activityColor = getActivityColor(pkg.activity_type);
+        
+        card.innerHTML = `
+            <div class="relative">
+                <div class="h-48 ${activityColor} flex items-center justify-center">
+                    <div class="text-center text-white">
+                        <i class="${activityIcon} text-4xl mb-2"></i>
+                        <p class="text-sm font-medium">${pkg.activity_type}</p>
+                    </div>
+                </div>
+                <div class="absolute top-4 right-4">
+                    <span class="bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-semibold">₱${pkg.price}</span>
+                </div>
+            </div>
+            <div class="p-6">
+                <h3 class="text-xl font-bold text-gray-900 mb-2">${pkg.name}</h3>
+                <p class="text-gray-600 mb-4 line-clamp-3">${pkg.description || 'An amazing adventure awaits you!'}</p>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <div class="flex items-center mr-2">
+                            <span class="text-yellow-400 text-lg">${starsHTML}</span>
+                        </div>
+                        <span class="text-sm text-gray-600 ml-2">${avgRating.toFixed(1)} (${reviewCount} review${reviewCount !== 1 ? 's' : ''})</span>
+                    </div>
+                    <div><span class="text-xs text-gray-500">${pkg.duration} hour${pkg.duration !== 1 ? 's' : ''}</span></div>
+                </div>
+                <div class="mb-4">
+                    <div class="flex items-center text-sm text-gray-600 mb-1">
+                        <i class="fas fa-users mr-2"></i>
+                        <span>Max ${pkg.max_participants} participants</span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-user-tie mr-2"></i>
+                        <span>Provider: ${pkg.created_by_name || 'N/A'}</span>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="openBookingModal(${pkg.id})" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors duration-200">
+                        <i class="fas fa-calendar-plus mr-2"></i>Book Now
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        return card;
+    }
+
+    // Get appropriate icon for activity type
+    function getActivityIcon(activityType) {
+        const icons = {
+            'Island Hopping': 'fas fa-ship',
+            'Snorkeling': 'fas fa-swimmer',
+            'Diving': 'fas fa-mask',
+            'Kayaking': 'fas fa-water',
+            'Fishing': 'fas fa-fish',
+            'default': 'fas fa-water'
+        };
+        return icons[activityType] || icons.default;
+    }
+
+    // Get appropriate color gradient for activity type
+    function getActivityColor(activityType) {
+        const colors = {
+            'Island Hopping': 'bg-gradient-to-br from-blue-400 to-blue-600',
+            'Snorkeling': 'bg-gradient-to-br from-cyan-400 to-cyan-600',
+            'Diving': 'bg-gradient-to-br from-indigo-400 to-indigo-600',
+            'Kayaking': 'bg-gradient-to-br from-teal-400 to-teal-600',
+            'Fishing': 'bg-gradient-to-br from-green-400 to-green-600',
+            'default': 'bg-gradient-to-br from-blue-400 to-blue-600'
+        };
+        return colors[activityType] || colors.default;
+    }
+
+    function setupReviewHandlers() {
+        // Prevent multiple setups
+        if (reviewHandlersSetup) {
+            console.log("Review handlers already setup, skipping...");
+            return;
+        }
+
+        // Remove existing event listeners to prevent duplicates
+        const stars = document.querySelectorAll('.star');
+        const ratingInput = document.getElementById('ratingValue');
+        const reviewForm = document.getElementById('reviewForm');
+
+        // Only setup if elements exist
+        if (stars.length === 0 || !ratingInput || !reviewForm) {
+            console.log("Review elements not found, skipping setup...");
+            return;
+        }
+
+        // Remove existing event listeners by cloning and replacing elements
+        stars.forEach((star, index) => {
+            const newStar = star.cloneNode(true);
+            star.parentNode.replaceChild(newStar, star);
+        });
+
+        // Re-query stars after replacement
+        const newStars = document.querySelectorAll('.star');
+        
+        newStars.forEach((star, index) => {
+            star.addEventListener('mouseover', () => {
+                highlightStars(index + 1);
+            });
+
+            star.addEventListener('mouseout', () => {
+                const currentRating = parseInt(ratingInput.value) || 0;
+                highlightStars(currentRating);
+            });
+
+            star.addEventListener('click', () => {
+                const rating = index + 1;
+                ratingInput.value = rating;
+                highlightStars(rating);
+            });
+        });
+
+        // Remove existing form event listener and add new one
+        const newForm = reviewForm.cloneNode(true);
+        reviewForm.parentNode.replaceChild(newForm, reviewForm);
+        
+        const newReviewForm = document.getElementById('reviewForm');
+        newReviewForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await submitReview();
+        });
+
+        // Mark as setup
+        reviewHandlersSetup = true;
+        console.log("✅ Review handlers setup completed");
+    }
+
+    function resetReviewHandlers() {
+        reviewHandlersSetup = false;
+        console.log("🔄 Review handlers reset");
+    }
+
+    function highlightStars(rating) {
+        const stars = document.querySelectorAll('.star');
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.add('active');
+            } else {
+                star.classList.remove('active');
+            }
+        });
+    }
+
+    // Open review modal for completed bookings
+    function openReviewModal(bookingId, packageId, packageName, activityType) {
+        console.log("🔹 Opening review modal for booking:", bookingId);
+        
+        selectedReviewBooking = {
+            booking_id: bookingId,
+            package_id: packageId,
+            package_name: packageName,
+            activity_type: activityType
+        };
+
+        document.getElementById('reviewBookingId').value = bookingId;
+        document.getElementById('reviewPackageId').value = packageId;
+        document.getElementById('reviewModalTitle').textContent = `Rate Your ${activityType} Experience`;
+
+        // Update package info
+        document.getElementById('reviewPackageInfo').innerHTML = `
+            <div class="flex items-center">
+                <span class="text-3xl mr-4">${activityType === 'Island Hopping' ? '🏝️' : '🤿'}</span>
+                <div>
+                    <h3 class="font-bold text-lg text-gray-900">${packageName}</h3>
+                    <p class="text-blue-600 font-semibold">${activityType}</p>
+                </div>
+            </div>
+        `;
+
+        // Reset form
+        document.getElementById('reviewForm').reset();
+        document.getElementById('ratingValue').value = '';
+        highlightStars(0);
+        document.getElementById('reviewMessageContainer').innerHTML = '';
+
+        // Reset review handlers to allow fresh setup
+        resetReviewHandlers();
+        
+        // Setup review handlers for this modal instance
+        setupReviewHandlers();
+
+        // Show modal
+        document.getElementById('reviewModal').classList.remove('hidden');
+        document.getElementById('reviewModal').classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeReviewModal() {
+        document.getElementById('reviewModal').classList.add('hidden');
+        document.getElementById('reviewModal').classList.remove('show');
+        document.body.style.overflow = 'auto';
+        selectedReviewBooking = null;
+    }
+
+    async function submitReview() {
+        const submitBtn = document.getElementById('submitReview');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Submitting...';
+
+        try {
+            const formData = new FormData(document.getElementById('reviewForm'));
+            const reviewData = Object.fromEntries(formData);
+            console.log("🔹 Submitting review data:", reviewData);
+
+            const response = await fetch('/api/reviews', {
+                credentials: 'include',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(reviewData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                console.log("✅ Review submitted successfully");
+                showReviewSuccessMessage('🎉 Thank you for your review! Your feedback helps us improve our services.');
+                setTimeout(() => {
+                    closeReviewModal();
+                    // Refresh booking history if modal is open
+                    if (!document.getElementById('bookingHistoryModal').classList.contains('hidden')) {
+                        loadBookingHistory();
+                    }
+                    // Note: Removed loadPackagesWithStats() call to prevent infinite loops
+                    // Package stats will be updated when user navigates or refreshes
+                }, 3000);
+            } else {
+                console.log("❌ Review submission failed:", result.message);
+                showReviewMessage(result.message || 'Failed to submit review', 'error');
+            }
+        } catch (error) {
+            console.error('❌ Error submitting review:', error);
+            showReviewMessage('Failed to submit review. Please try again.', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    }
+
+    function showReviewSuccessMessage(message) {
+        const container = document.getElementById('reviewMessageContainer');
+        container.innerHTML = `
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 text-center">
+                <div class="success-checkmark text-4xl mb-2">✅</div>
+                <div class="font-bold text-lg">${message}</div>
+            </div>
+        `;
+    }
+
+    function showReviewMessage(message, type) {
+        const container = document.getElementById('reviewMessageContainer');
+        const alertClass = type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
+        container.innerHTML = `<div class="${alertClass} border px-4 py-3 rounded mb-4">${message}</div>`;
+    }
+
+    // View package reviews
+    async function viewPackageReviews(packageId) {
+        console.log("🔹 Loading reviews for package:", packageId);
+        
+        try {
+            const response = await fetch(`/api/packages/${packageId}/reviews`);
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.message || 'Failed to load reviews');
+            }
+
+            const package = packages.find(p => p.id === packageId);
+            
+            // Update modal title and stats
+            document.getElementById('reviewsModalTitle').textContent = package.name;
+            document.getElementById('reviewsModalStats').textContent = 
+                result.stats.total_reviews > 0 
+                    ? `Average rating: ${result.stats.average_rating} stars • ${result.stats.total_reviews} reviews`
+                    : 'No ratings yet';
+
+            // Update review count
+            document.getElementById('reviewCount').textContent = 
+                `Showing ${result.reviews.length} review${result.reviews.length !== 1 ? 's' : ''}`;
+
+            // Show/hide no reviews message
+            const noReviewsMessage = document.getElementById('noReviewsMessage');
+            const reviewsContainer = document.getElementById('reviewsContainer');
+            
+            if (result.reviews.length === 0) {
+                noReviewsMessage.classList.remove('hidden');
+                reviewsContainer.classList.add('hidden');
+            } else {
+                noReviewsMessage.classList.add('hidden');
+                reviewsContainer.classList.remove('hidden');
+                
+                // Render reviews
+                renderReviews(result.reviews);
+            }
+
+            // Setup filter functionality
+            setupReviewsFilter(result.reviews);
+
+            // Show modal
+            document.getElementById('reviewsModal').classList.remove('hidden');
+        } catch (error) {
+            console.error('❌ Error loading reviews:', error);
+            alert('Failed to load reviews. Please try again.');
+        }
+    }
+
+    function renderReviews(reviews) {
+        const reviewsHTML = reviews.map(review => `
+            <div class="review-card">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="review-stars">
+                            ${'★'.repeat(review.rating)}${'☆'.repeat(5 - review.rating)}
+                        </div>
+                        <span class="review-date">
+                            ${new Date(review.review_date).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                            })}
+                        </span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-user text-gray-400 mr-2"></i>
+                        <span class="text-sm font-medium text-gray-700">
+                            ${review.first_name} ${review.last_name}
+                        </span>
+                    </div>
+                </div>
+                ${review.comment ? `
+                    <div class="review-comment">
+                        <p>${review.comment}</p>
+                    </div>
+                ` : ''}
+            </div>
+        `).join('')
+
+        document.getElementById('reviewsContainer').innerHTML = reviewsHTML;
+    }
+
+    function setupReviewsFilter(allReviews) {
+        const filterSelect = document.getElementById('reviewsFilter');
+        filterSelect.value = 'all';
+        
+        filterSelect.onchange = function() {
+            const rating = this.value;
+            const filteredReviews = rating === 'all' 
+                ? allReviews 
+                : allReviews.filter(r => r.rating === Number(rating));
+            
+            document.getElementById('reviewCount').textContent = 
+                `Showing ${filteredReviews.length} review${filteredReviews.length !== 1 ? 's' : ''}`;
+            
+            if (filteredReviews.length === 0) {
+                document.getElementById('reviewsContainer').innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-gray-500">No reviews found with ${rating} stars.</p>
+                    </div>
+                `;
+            } else {
+                renderReviews(filteredReviews);
+            }
+        };
+    }
+
+    function closeReviewsModal() {
+        document.getElementById('reviewsModal').classList.add('hidden');
+        document.getElementById('reviewsFilter').value = 'all';
+    }
+
+    // Load booking history
+    async function loadBookingHistory() {
+        console.log("🔹 Loading booking history...");
+        console.log("🔹 Current URL:", window.location.href);
+        
+        try {
+            const response = await fetch('/api/bookings/my', {
+                credentials: 'include'
+            });
+            console.log("🔹 Booking history response status:", response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("❌ Booking history error:", errorText);
+                throw new Error(`Failed to load booking history: ${response.status} ${errorText}`);
+            }
+            
+            bookingHistory = await response.json();
+            console.log("✅ Booking history loaded:", bookingHistory);
+            console.log("📊 Number of bookings:", bookingHistory.length);
+            
+            // Debug: Log provider contact information for each booking
+            bookingHistory.forEach((booking, index) => {
+                console.log(`Booking ${index + 1} provider contact info:`, {
+                    id: booking.id,
+                    package_name: booking.package_name,
+                    status: booking.status,
+                    payment_method: booking.payment_method,
+                    provider_name: booking.provider_name,
+                    provider_contact: booking.provider_contact,
+                    provider_phone: booking.provider_phone,
+                    provider_gcash_number: booking.provider_gcash_number,
+                    provider_gcash_name: booking.provider_gcash_name,
+                    // Raw values for debugging
+                    raw_provider_contact: booking.provider_contact,
+                    raw_provider_phone: booking.provider_phone,
+                    contact_type: typeof booking.provider_contact,
+                    phone_type: typeof booking.provider_phone,
+                    contact_truthy: !!booking.provider_contact,
+                    phone_truthy: !!booking.provider_phone
+                });
+                
+                // Debug: Check if contact info is missing
+                if (!booking.provider_contact && !booking.provider_phone && booking.status === 'cancelled' && booking.payment_method === 'gcash') {
+                    console.log('❌ Missing contact info for cancelled GCash booking:', booking.id);
+                    console.log('Booking data:', {
+                        id: booking.id,
+                        package_name: booking.package_name,
+                        provider_name: booking.provider_name,
+                        provider_contact: booking.provider_contact,
+                        provider_phone: booking.provider_phone
+                    });
+                }
+                
+                // Check if this is a cancelled GCash booking
+                if (booking.status === 'cancelled' && booking.payment_method === 'gcash') {
+                    console.log(`🚨 CANCELLED GCASH BOOKING FOUND:`, {
+                        booking_id: booking.id,
+                        package: booking.package_name,
+                        provider_contact: booking.provider_contact,
+                        provider_phone: booking.provider_phone,
+                        provider_name: booking.provider_name,
+                        has_contact: !!(booking.provider_contact || booking.provider_phone),
+                        // Additional debugging
+                        contact_string: String(booking.provider_contact),
+                        phone_string: String(booking.provider_phone),
+                        contact_length: booking.provider_contact ? booking.provider_contact.length : 0,
+                        phone_length: booking.provider_phone ? booking.provider_phone.length : 0
+                    });
+                }
+            });
+            
+            renderBookingHistory();
+        } catch (error) {
+            console.error('❌ Error loading booking history:', error);
+            document.getElementById('bookingHistoryContainer').innerHTML = 
+                `<div class="text-center py-16">
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        <h3 class="font-bold">Failed to load booking history</h3>
+                        <p class="mt-2">Error: ${error.message}</p>
+                        <button onclick="loadBookingHistory()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                            Try Again
+                        </button>
+                    </div>
+                </div>`;
+        }
+    }
+
+    function renderBookingHistory() {
+        const container = document.getElementById('bookingHistoryContainer');
+        
+        let filteredBookings = bookingHistory;
+        
+        if (currentHistoryFilter !== 'all') {
+            filteredBookings = filteredBookings.filter(booking => booking.activity_type === currentHistoryFilter);
+        }
+
+
+        if (filteredBookings.length === 0) {
+            container.innerHTML = ` 
+                <div class="text-center py-16">
+                    <i class="fas fa-calendar-times text-6xl text-gray-400 mb-4"></i>
+                    <h3 class="text-xl font-bold text-gray-600 mb-2">No Bookings Found</h3>
+                    <p class="text-gray-500">You don't have any bookings at the moment.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const bookingsHTML = `
+            <div class="space-y-4">
+                ${filteredBookings.map(booking => `
+                    <div class="booking-history-card bg-white rounded-lg shadow-md p-6 border-l-4 border-${getStatusColor(booking.status)}">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <span class="text-2xl mr-3">${booking.activity_type === 'Island Hopping' ? '🏝️' : '🤿'}</span>
+                                    <div>
+                                        <h3 class="text-lg font-bold text-gray-900">${booking.package_name}</h3>
+                                        <p class="text-sm text-gray-600">${booking.activity_type}</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mb-3">
+                                    <div>
+                                        <i class="fas fa-hashtag mr-1"></i>
+                                        <span class="font-semibold">${booking.booking_reference}</span>
+                                    </div>
+                                    <div>
+                                        <i class="fas fa-calendar mr-1"></i>
+                                        ${new Date(booking.booking_date).toLocaleDateString()}
+                                    </div>
+                                    <div>
+                                        <i class="fas fa-users mr-1"></i>
+                                        ${booking.number_of_participants} participant${booking.number_of_participants > 1 ? 's' : ''}
+                                    </div>
+                                    <div>
+                                        <i class="fas fa-peso-sign mr-1"></i>
+                                        ₱${parseFloat(booking.total_amount).toLocaleString()}
+                                    </div>
+                                </div>
+                                
+                                <div class="text-xs text-gray-500">
+                                    Booked on: ${new Date(booking.created_at).toLocaleDateString()} at ${new Date(booking.created_at).toLocaleTimeString()}
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 md:mt-0 md:ml-6 flex flex-col items-end space-y-2">
+                                <span class="status-${booking.status.toLowerCase()} text-white px-3 py-1 rounded-full text-sm font-semibold">
+                                    ${booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                                </span>
+                                
+                                ${booking.status && booking.status.toLowerCase() === 'completed' ? `
+                                    <button onclick="openReviewModal(${booking.id}, ${booking.package_id}, '${booking.package_name}', '${booking.activity_type}')" 
+                                            class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md inline-flex items-center text-sm">
+                                        <i class="fas fa-star mr-2"></i>Leave Review
+                                    </button>
+                                ` : ''}
+                                
+                                ${booking.status && booking.status.toLowerCase() === 'pending' ? `
+                                    <button onclick="cancelBooking(${booking.id})" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm">
+                                        Cancel Booking
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                        
+                        ${booking.special_requests ? `
+                            <div class="mt-4 p-3 bg-gray-50 rounded-md">
+                                <p class="text-sm text-gray-700"><strong>Special Requests:</strong> ${booking.special_requests}</p>
+                            </div>
+                        ` : ''}
+                        
+                        ${booking.status && booking.status.toLowerCase() === 'cancelled' ? `
+                            <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                                <div class="flex items-start">
+                                    <i class="fas fa-phone-alt text-red-600 mt-1 mr-3"></i>
+                                    <div class="flex-1">
+                                        <h4 class="text-sm font-semibold text-red-800 mb-2">Contact Service Provider for Refund</h4>
+                                        <div class="text-sm text-red-700 space-y-1">
+                                            ${booking.provider_name ? `<p><strong>Provider:</strong> ${booking.provider_name}</p>` : ''}
+                                            ${booking.provider_contact ? `<p><strong>Contact:</strong> ${booking.provider_contact}</p>` : ''}
+                                            ${booking.provider_phone ? `<p><strong>Phone:</strong> <a href="tel:${booking.provider_phone}" class="text-red-600 hover:text-red-800 underline">${booking.provider_phone}</a></p>` : ''}
+                                            ${booking.provider_email ? `<p><strong>Email:</strong> <a href="mailto:${booking.provider_email}" class="text-red-600 hover:text-red-800 underline">${booking.provider_email}</a></p>` : ''}
+                                        </div>
+                                        <div class="mt-3 p-2 bg-red-100 rounded text-xs text-red-600">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            <strong>Note:</strong> Contact the service provider directly to arrange your refund. Keep your booking reference (${booking.booking_reference}) handy when contacting them.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        container.innerHTML = bookingsHTML;
+    }
+
+
+    function getStatusColor(status) {
+        switch(status.toLowerCase()) {
+            case 'pending': return 'yellow-500';
+            case 'confirmed': return 'green-500';
+            case 'completed': return 'blue-500';
+            case 'cancelled': return 'red-500';
+            default: return 'gray-500';
+        }
+    }
+
+    function filterPackages(filter) {
+        currentFilter = filter;
+        renderPackages();
+        
+        // Scroll to packages section
+        document.getElementById('packagesContainer').scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start'
+        });
+    }
+
+
+
+    // Add search functionality to the page
+    function setupSearchFunctionality() {
+        // Create search input if it doesn't exist
+        const packagesSection = document.getElementById('packagesContainer');
+        if (packagesSection && !document.getElementById('packageSearchInput')) {
+            const searchContainer = document.createElement('div');
+            searchContainer.className = 'mb-8 max-w-md mx-auto';
+            searchContainer.innerHTML = `
+                <div class="relative">
+                    <input 
+                        type="text" 
+                        id="packageSearchInput"
+                        placeholder="Search activities..." 
+                        class="w-full px-4 py-3 pl-12 pr-4 text-gray-700 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                    <button 
+                        id="clearSearchBtn"
+                        onclick="clearSearch()"
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 hidden"
+                    >
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            // Insert search container before packages
+            packagesSection.parentNode.insertBefore(searchContainer, packagesSection);
+            
+            // Add event listener for search
+            const searchInput = document.getElementById('packageSearchInput');
+            const clearBtn = document.getElementById('clearSearchBtn');
+            
+            searchInput.addEventListener('input', function(e) {
+                const searchTerm = e.target.value;
+                searchPackages(searchTerm);
+                
+                // Show/hide clear button
+                if (searchTerm.trim() !== '') {
+                    clearBtn.classList.remove('hidden');
+                } else {
+                    clearBtn.classList.add('hidden');
+                }
+            });
+        }
+    }
+
+    // Clear search function
+    function clearSearch() {
+        const searchInput = document.getElementById('packageSearchInput');
+        const clearBtn = document.getElementById('clearSearchBtn');
+        
+        if (searchInput) {
+            searchInput.value = '';
+            clearBtn.classList.add('hidden');
+            renderPackages(); // Show all packages based on current filter
+        }
+    }
+
+    function filterBookingHistory(filter) {
+        currentHistoryFilter = filter;
+        
+        document.querySelectorAll('.history-filter-btn').forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'text-white');
+            btn.classList.add('bg-gray-200', 'text-gray-700');
+        });
+        
+        event.target.classList.remove('bg-gray-200', 'text-gray-700');
+        event.target.classList.add('bg-blue-600', 'text-white');
+        
+        renderBookingHistory();
+    }
+
+    function openBookingHistory() {
+        console.log("🔹 openBookingHistory called");
+        const modal = document.getElementById('bookingHistoryModal');
+        console.log("🔹 bookingHistoryModal element:", modal);
+        
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        loadBookingHistory();
+        } else {
+            console.error("❌ bookingHistoryModal element not found!");
+        }
+    }
+
+    function closeBookingHistory() {
+        document.getElementById('bookingHistoryModal').classList.add('hidden');
+        document.getElementById('bookingHistoryModal').classList.remove('show');
+        document.body.style.overflow = 'auto';
+    }
+
+    function setMinDate() {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('bookingDate').min = tomorrow.toISOString().split('T')[0];
+    }
+
+    function setupFormHandlers() {
+        // Prevent multiple setups
+        if (formHandlersSetup) {
+            console.log("Form handlers already setup, skipping...");
+            return;
+        }
+
+        const bookingForm = document.getElementById('bookingForm');
+        const paymentCash = document.getElementById('paymentCash');
+        const paymentGCash = document.getElementById('paymentGCash');
+
+        console.log("🔹 Form elements found:", {
+            bookingForm: !!bookingForm,
+            paymentCash: !!paymentCash,
+            paymentGCash: !!paymentGCash
+        });
+
+        // Only setup if elements exist
+        if (!bookingForm || !paymentCash || !paymentGCash) {
+            console.log("❌ Form elements not found, skipping setup...");
+            console.log("Missing elements:", {
+                bookingForm: !bookingForm,
+                paymentCash: !paymentCash,
+                paymentGCash: !paymentGCash
+            });
+            return;
+        }
+
+        // Add event listeners to elements
+        bookingForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await submitBooking();
+        });
+
+        // Enhanced payment method change handlers with multiple event types
+        function handleCashPayment() {
+            console.log("🔹 Cash payment selected");
+                document.getElementById('gcashPaymentInfo').classList.add('hidden');
+            document.getElementById('paymentReference').classList.add('hidden');
+                // Remove required attribute from payment reference for cash payments
+            const paymentRefInput = document.getElementById('paymentRefInput');
+            if (paymentRefInput) {
+                paymentRefInput.removeAttribute('required');
+                console.log("🔹 Removed required attribute from payment reference input");
+            }
+        }
+
+        function handleGCashPayment() {
+            console.log("🔹 GCash payment selected");
+                showGCashPaymentInfo();
+            
+            // Show payment reference section
+            const paymentReference = document.getElementById('paymentReference');
+            if (paymentReference) {
+                paymentReference.classList.remove('hidden');
+                console.log("🔹 Payment reference section shown");
+            } else {
+                console.error("❌ paymentReference element not found");
+            }
+            
+                // Add required attribute to payment reference for GCash payments
+            const paymentRefInput = document.getElementById('paymentRefInput');
+            if (paymentRefInput) {
+                paymentRefInput.setAttribute('required', 'required');
+                console.log("🔹 Added required attribute to payment reference input");
+            } else {
+                console.error("❌ paymentRefInput element not found");
+            }
+        }
+
+        // Add multiple event listeners for better responsiveness
+        paymentCash.addEventListener('change', function() {
+            if (this.checked) {
+                handleCashPayment();
+            }
+        });
+
+        paymentCash.addEventListener('click', function() {
+            if (this.checked) {
+                handleCashPayment();
+            }
+        });
+
+        // Enhanced GCash event listeners
+        paymentGCash.addEventListener('change', function() {
+            console.log("🔹 GCash radio button changed, checked:", this.checked);
+            console.log("🔹 Current payment reference visibility:", !document.getElementById('paymentReference').classList.contains('hidden'));
+            
+            if (this.checked) {
+                console.log("🔹 GCash is checked - showing payment reference");
+                handleGCashPayment();
+                
+                // Double-check payment reference is shown
+                setTimeout(() => {
+                    const paymentRef = document.getElementById('paymentReference');
+                    const isVisible = !paymentRef.classList.contains('hidden');
+                    console.log("🔹 Payment reference visibility after GCash selection:", isVisible);
+                    if (!isVisible) {
+                        console.log("🔹 Force showing payment reference");
+                        paymentRef.classList.remove('hidden');
+                    }
+                }, 100);
+            } else {
+                console.log("🔹 GCash deselected");
+                // Hide payment reference section when GCash is deselected
+                const paymentReference = document.getElementById('paymentReference');
+                if (paymentReference) {
+                    paymentReference.classList.add('hidden');
+                    console.log("🔹 Payment reference section hidden");
+                }
+            }
+        });
+
+        paymentGCash.addEventListener('click', function() {
+            console.log("🔹 GCash radio button clicked, checked:", this.checked);
+            // Force the change event to fire
+            setTimeout(() => {
+                if (this.checked) {
+                    handleGCashPayment();
+                }
+            }, 10);
+        });
+
+        // Add mousedown event for immediate response
+        paymentGCash.addEventListener('mousedown', function() {
+            console.log("🔹 GCash radio button mousedown");
+        });
+
+        // Add label click handler for better responsiveness
+        const gcashLabel = document.querySelector('label[for="paymentGCash"]');
+        if (gcashLabel) {
+            gcashLabel.addEventListener('click', function(e) {
+                console.log("🔹 GCash label clicked");
+                // Ensure the radio button is checked
+                if (!paymentGCash.checked) {
+                    paymentGCash.checked = true;
+                    // Trigger change event
+                    paymentGCash.dispatchEvent(new Event('change'));
+                }
+            });
+        }
+
+        // Test the radio button functionality
+        console.log("🔹 Testing GCash radio button:", {
+            element: paymentGCash,
+            disabled: paymentGCash.disabled,
+            checked: paymentGCash.checked,
+            type: paymentGCash.type,
+            value: paymentGCash.value,
+            style: window.getComputedStyle(paymentGCash)
+        });
+
+        // Add global click handler for payment method area
+        const paymentMethodFieldset = document.querySelector('fieldset');
+        if (paymentMethodFieldset) {
+            paymentMethodFieldset.addEventListener('click', function(e) {
+                // Check if click was on GCash radio or label
+                if (e.target.id === 'paymentGCash' || e.target.closest('label[for="paymentGCash"]')) {
+                    console.log("🔹 Payment method area clicked - GCash");
+                    setTimeout(() => {
+                        if (paymentGCash.checked) {
+                            console.log("🔹 GCash is checked via fieldset click - showing payment reference");
+                            handleGCashPayment();
+                            // Force show payment reference
+                            showPaymentReference();
+                        }
+                    }, 50);
+                } else if (e.target.id === 'paymentCash' || e.target.closest('label[for="paymentCash"]')) {
+                    console.log("🔹 Payment method area clicked - Cash");
+                    setTimeout(() => {
+                        if (paymentCash.checked) {
+                            console.log("🔹 Cash is checked via fieldset click - hiding payment reference");
+                            handleCashPayment();
+                            // Force hide payment reference
+                            hidePaymentReference();
+                        }
+                    }, 50);
+                }
+            });
+        }
+
+        // Mark as setup
+        formHandlersSetup = true;
+        console.log("✅ Form handlers setup completed");
+    }
+
+    // Test function to manually check GCash radio button
+    function testGCashRadio() {
+        const gcashRadio = document.getElementById('paymentGCash');
+        const paymentReference = document.getElementById('paymentReference');
+        const paymentRefInput = document.getElementById('paymentRefInput');
+        const cashRadio = document.getElementById('paymentCash');
+        
+        console.log("🔹 Manual GCash radio test:", {
+            gcashRadio: {
+                element: gcashRadio,
+                exists: !!gcashRadio,
+                disabled: gcashRadio?.disabled,
+                checked: gcashRadio?.checked,
+                type: gcashRadio?.type,
+                value: gcashRadio?.value,
+                style: gcashRadio ? window.getComputedStyle(gcashRadio) : null
+            },
+            cashRadio: {
+                element: cashRadio,
+                exists: !!cashRadio,
+                checked: cashRadio?.checked
+            },
+            paymentReference: {
+                element: paymentReference,
+                exists: !!paymentReference,
+                hidden: paymentReference?.classList.contains('hidden')
+            },
+            paymentRefInput: {
+                element: paymentRefInput,
+                exists: !!paymentRefInput,
+                required: paymentRefInput?.hasAttribute('required')
+            }
+        });
+        
+        if (gcashRadio) {
+            // Uncheck cash first
+            if (cashRadio) {
+                cashRadio.checked = false;
+                cashRadio.dispatchEvent(new Event('change'));
+            }
+            
+            // Try to manually check GCash
+            gcashRadio.checked = true;
+            console.log("🔹 Manually set GCash radio to checked");
+            
+            // Trigger multiple events to ensure responsiveness
+            gcashRadio.dispatchEvent(new Event('mousedown'));
+            gcashRadio.dispatchEvent(new Event('click'));
+            gcashRadio.dispatchEvent(new Event('change'));
+            console.log("🔹 Dispatched multiple events");
+            
+            // Check if payment reference section is now visible
+            setTimeout(() => {
+                const isVisible = !paymentReference?.classList.contains('hidden');
+                const isRequired = paymentRefInput?.hasAttribute('required');
+                console.log("🔹 After GCash selection:", {
+                    paymentReferenceVisible: isVisible,
+                    paymentRefInputRequired: isRequired,
+                    gcashChecked: gcashRadio.checked,
+                    cashChecked: cashRadio?.checked
+                });
+            }, 100);
+        }
+    }
+
+    // Alternative test function using direct DOM manipulation
+    function forceGCashSelection() {
+        console.log("🔹 Force GCash selection test");
+        
+        // Get elements
+        const gcashRadio = document.getElementById('paymentGCash');
+        const cashRadio = document.getElementById('paymentCash');
+        const paymentReference = document.getElementById('paymentReference');
+        const gcashInfo = document.getElementById('gcashPaymentInfo');
+        
+        if (gcashRadio && cashRadio) {
+            // Uncheck cash
+            cashRadio.checked = false;
+            
+            // Check GCash
+            gcashRadio.checked = true;
+            
+            // Show GCash info
+            if (gcashInfo) {
+                gcashInfo.classList.remove('hidden');
+            }
+            
+            // Show payment reference
+            if (paymentReference) {
+                paymentReference.classList.remove('hidden');
+            }
+            
+            // Make payment reference required
+            const paymentRefInput = document.getElementById('paymentRefInput');
+            if (paymentRefInput) {
+                paymentRefInput.setAttribute('required', 'required');
+            }
+            
+            console.log("🔹 Force selection completed");
+            console.log("🔹 Elements state:", {
+                gcashChecked: gcashRadio.checked,
+                cashChecked: cashRadio.checked,
+                gcashInfoVisible: !gcashInfo?.classList.contains('hidden'),
+                paymentRefVisible: !paymentReference?.classList.contains('hidden')
+            });
+        }
+    }
+
+    // Simple function to show payment reference
+    function showPaymentReference() {
+        console.log("🔹 showPaymentReference called");
+        const paymentReference = document.getElementById('paymentReference');
+        const paymentRefInput = document.getElementById('paymentRefInput');
+        
+        if (paymentReference) {
+            paymentReference.classList.remove('hidden');
+            console.log("✅ Payment reference section is now visible");
+        } else {
+            console.error("❌ Payment reference element not found");
+        }
+        
+        if (paymentRefInput) {
+            paymentRefInput.setAttribute('required', 'required');
+            console.log("✅ Payment reference input is now required");
+        } else {
+            console.error("❌ Payment reference input not found");
+        }
+    }
+
+    // Simple function to hide payment reference
+    function hidePaymentReference() {
+        console.log("🔹 hidePaymentReference called");
+        const paymentReference = document.getElementById('paymentReference');
+        const paymentRefInput = document.getElementById('paymentRefInput');
+        
+        if (paymentReference) {
+            paymentReference.classList.add('hidden');
+            console.log("✅ Payment reference section is now hidden");
+        }
+        
+        if (paymentRefInput) {
+            paymentRefInput.removeAttribute('required');
+            console.log("✅ Payment reference input is no longer required");
+        }
+    }
+
+    // Show GCash payment information
+    function showGCashPaymentInfo() {
+        console.log("🔹 showGCashPaymentInfo called");
+        console.log("🔹 selectedPackage:", selectedPackage);
+        console.log("🔹 selectedPackage type:", typeof selectedPackage);
+        
+        const gcashInfo = document.getElementById('gcashPaymentInfo');
+        const gcashDetails = document.getElementById('gcashDetails');
+        
+        console.log("🔹 gcashInfo element:", gcashInfo);
+        console.log("🔹 gcashDetails element:", gcashDetails);
+        
+        // Safety check for required elements
+        if (!gcashInfo) {
+            console.error("❌ gcashPaymentInfo element not found");
+            return;
+        }
+        
+        if (!gcashDetails) {
+            console.error("❌ gcashDetails element not found");
+            return;
+        }
+        
+        // Check for GCash info in both possible locations
+        const gcashNumber = selectedPackage?.provider_gcash_number || selectedPackage?.gcash_number;
+        const gcashName = selectedPackage?.provider_gcash_name || selectedPackage?.gcash_name;
+        
+        console.log("🔹 GCash info check:", {
+            provider_gcash_number: selectedPackage?.provider_gcash_number,
+            provider_gcash_name: selectedPackage?.provider_gcash_name,
+            gcash_number: selectedPackage?.gcash_number,
+            gcash_name: selectedPackage?.gcash_name,
+            final_gcash_number: gcashNumber,
+            final_gcash_name: gcashName
+        });
+        
+        if (selectedPackage && gcashNumber && gcashName) {
+            gcashDetails.innerHTML = `
+                <div class="space-y-2">
+                    <div class="flex items-center">
+                        <i class="fas fa-mobile-alt text-blue-600 mr-2"></i>
+                        <span><strong>GCash Number:</strong> ${gcashNumber}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-user text-blue-600 mr-2"></i>
+                        <span><strong>Account Name:</strong> ${gcashName}</span>
+                    </div>
+                    <div class="flex items-center">
+                        <i class="fas fa-peso-sign text-blue-600 mr-2"></i>
+                        <span><strong>Amount to Send:</strong> <span id="gcashAmount" class="font-bold text-blue-800">₱0.00</span></span>
+                    </div>
+                </div>
+            `;
+            
+            // Update provider contact information
+            updateProviderContact();
+            
+            // Update GCash amount when total changes
+            updateGCashAmount();
+            gcashInfo.classList.remove('hidden');
+        } else {
+            gcashDetails.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-info-circle text-blue-600 text-2xl mb-2"></i>
+                    <p class="text-blue-700">GCash payment information will be provided by the service provider after booking confirmation.</p>
+                    <p class="text-sm text-blue-600 mt-2">You can still select GCash payment and contact the provider for payment details.</p>
+                </div>
+            `;
+            gcashInfo.classList.remove('hidden');
+        }
+    }
+
+
+    // Update provider contact information
+    function updateProviderContact() {
+        const providerContact = document.getElementById('providerContact');
+        if (!providerContact) {
+            console.log("🔹 providerContact element not found - skipping update");
+            return;
+        }
+        
+        if (selectedPackage && selectedPackage.provider_contact) {
+            providerContact.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-phone text-orange-600 mr-2"></i>
+                    <span><strong>Provider Contact:</strong> ${selectedPackage.provider_contact}</span>
+                </div>
+            `;
+        } else {
+            providerContact.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-info-circle text-orange-600 mr-2"></i>
+                    <span>Contact information will be provided after booking confirmation</span>
+                </div>
+            `;
+        }
+    }
+
+    // Update GCash amount display
+    function updateGCashAmount() {
+        const participants = parseInt(document.getElementById('participants').value) || 0;
+        const pricePerPerson = selectedPackage ? parseFloat(selectedPackage.price) : 0;
+        const totalAmount = participants * pricePerPerson;
+        
+        const gcashAmountElement = document.getElementById('gcashAmount');
+        if (gcashAmountElement) {
+            gcashAmountElement.textContent = `₱${totalAmount.toLocaleString()}`;
+        }
+    }
+
+    // Booking modal functions
+    function openBookingModal(packageId) {
+        console.log("🔹 openBookingModal called with packageId:", packageId);
+        selectedPackage = packages.find(pkg => pkg.id === packageId);
+        console.log("🔹 selectedPackage:", selectedPackage);
+        console.log("🔹 selectedPackage GCash info:", {
+            provider_gcash_number: selectedPackage?.provider_gcash_number,
+            provider_gcash_name: selectedPackage?.provider_gcash_name,
+            gcash_number: selectedPackage?.gcash_number,
+            gcash_name: selectedPackage?.gcash_name
+        });
+        
+        if (!selectedPackage) {
+            console.error("❌ Package not found for ID:", packageId);
+            return;
+        }
+
+        document.getElementById('packageId').value = packageId;
+        document.getElementById('modalTitle').textContent = `Book ${selectedPackage.name}`;
+        
+        updateBookingSummary();
+        updateParticipantsOptions();
+        
+        // Reset payment method selection
+        document.getElementById('paymentCash').checked = true;
+        document.getElementById('paymentGCash').checked = false;
+        document.getElementById('gcashPaymentInfo').classList.add('hidden');
+        
+        // Reset payment reference field and hide section
+        const paymentRefInput = document.getElementById('paymentRefInput');
+        const paymentReference = document.getElementById('paymentReference');
+        if (paymentRefInput) {
+            paymentRefInput.value = '';
+            paymentRefInput.removeAttribute('required');
+        }
+        if (paymentReference) {
+            paymentReference.classList.add('hidden');
+        }
+        
+        document.getElementById('bookingModal').classList.remove('hidden');
+        document.getElementById('bookingModal').classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeBookingModal() {
+        document.getElementById('bookingModal').classList.add('hidden');
+        document.getElementById('bookingModal').classList.remove('show');
+        document.body.style.overflow = 'auto';
+        
+        document.getElementById('bookingForm').reset();
+        document.getElementById('messageContainer').innerHTML = '';
+        selectedPackage = null;
+    }
+
+    function updateParticipantsOptions() {
+        const select = document.getElementById('participants');
+        const maxParticipants = selectedPackage.max_participants;
+        
+        select.innerHTML = '<option value="">Select participants</option>';
+        
+        for (let i = 1; i <= Math.min(maxParticipants, 15); i++) {
+            const option = document.createElement('option');
+            option.value = i;
+            option.textContent = i === 1 ? '1 Person' : `${i} People`;
+            select.appendChild(option);
+        }
+    }
+
+    function updateBookingSummary() {
+        const summary = document.getElementById('bookingSummary');
+        summary.innerHTML = ` 
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <h3 class="font-bold text-lg text-gray-900">${selectedPackage.name}</h3>
+                    <p class="text-blue-600 font-semibold">${selectedPackage.activity_type}</p>
+                </div>
+                <span class="text-2xl font-bold text-blue-600">₱${parseFloat(selectedPackage.price).toLocaleString()}</span>
+            </div>
+            <div class="text-sm text-gray-600">
+                <p><i class="fas fa-clock mr-2"></i>Duration: ${selectedPackage.duration} day${selectedPackage.duration > 1 ? 's' : ''}</p>
+                <p><i class="fas fa-users mr-2"></i>Price per person</p>
+            </div>
+        `;
+    }
+
+    function updateTotal() {
+        const participants = parseInt(document.getElementById('participants').value) || 0;
+        const pricePerPerson = parseFloat(selectedPackage.price);
+        const total = participants * pricePerPerson;
+        
+        document.getElementById('totalAmount').textContent = `₱${total.toLocaleString()}`;
+        document.getElementById('totalAmountInput').value = total;
+        
+        // Update GCash amount if GCash payment is selected
+        updateGCashAmount();
+    }
+
+    async function submitBooking() {
+        const submitBtn = document.getElementById('submitBooking');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+        
+        try {
+            // Validate form before submission
+            const form = document.getElementById('bookingForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                throw new Error('Form validation failed');
+            }
+            
+            const formData = new FormData(form);
+            const bookingData = Object.fromEntries(formData);
+            
+            // Additional validation for GCash payments
+            if (bookingData.payment_method === 'gcash') {
+                if (!bookingData.payment_reference || bookingData.payment_reference.trim() === '') {
+                    showMessage('Payment reference number is required for GCash payments.', 'error');
+                    throw new Error('Payment reference required for GCash');
+                }
+            }
+            
+            const response = await fetch('/api/bookings', {
+                credentials: 'include',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(bookingData)
+            });
+
+            const result = await response.json();
+            
+            if (response.ok) {
+                const paymentMethod = bookingData.payment_method;
+                let successMessage = `🎉 Booking Confirmed! Your reference number is: ${result.booking_reference}`;
+                
+                if (paymentMethod === 'gcash') {
+                    const paymentRef = result.payment_reference || document.getElementById('paymentRefNumber').textContent;
+                    const gcashAmount = parseFloat(bookingData.total_amount).toLocaleString();
+                    const gcashNumber = selectedPackage?.provider_gcash_number || selectedPackage?.gcash_number || 'N/A';
+                    const gcashName = selectedPackage?.provider_gcash_name || selectedPackage?.gcash_name || 'N/A';
+                    
+                    successMessage += '\n\n📱 GCash Payment Instructions:';
+                    if (gcashNumber !== 'N/A' && gcashName !== 'N/A') {
+                        successMessage += '\n• Send ₱' + gcashAmount + ' to ' + gcashNumber;
+                        successMessage += '\n• Account Name: ' + gcashName;
+                        successMessage += '\n• Payment Reference: ' + paymentRef;
+                        successMessage += '\n• Include reference number in your payment message';
+                        successMessage += '\n• Keep your payment receipt as proof';
+                        successMessage += '\n• Your booking will be confirmed once payment is verified';
+                } else {
+                        successMessage += '\n• Contact the service provider for GCash payment details';
+                        successMessage += '\n• Payment Reference: ' + paymentRef;
+                        successMessage += '\n• Amount to Pay: ₱' + gcashAmount;
+                        successMessage += '\n• Provider will provide GCash number and account name';
+                    }
+                } else {
+                    const cashAmount = parseFloat(bookingData.total_amount).toLocaleString();
+                    successMessage += '\n\n💰 Payment: Please bring cash (₱' + cashAmount + ') on the day of your activity.';
+                }
+                
+                showSuccessMessage(successMessage);
+                setTimeout(() => {
+                    closeBookingModal();
+                    if (!document.getElementById('bookingHistoryModal').classList.contains('hidden')) {
+                        loadBookingHistory();
+                    }
+                }, 7000); // Increased timeout for longer message
+            } else {
+                showMessage(result.error || 'Failed to create booking', 'error');
+            }
+        } catch (error) {
+            console.error('Error submitting booking:', error);
+            showMessage('Failed to submit booking. Please try again.', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    }
+
+    function showSuccessMessage(message) {
+        const container = document.getElementById('messageContainer');
+        container.innerHTML = `
+            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 text-center">
+                <div class="success-checkmark text-4xl mb-2">✅</div>
+                <div class="font-bold text-lg">${message}</div>
+                <div class="text-sm mt-2">You can view this booking in your history.</div>
+            </div>
+        `;
+    }
+
+    function showMessage(message, type) {
+        const container = document.getElementById('messageContainer');
+        const alertClass = type === 'success' ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700';
+        container.innerHTML = `<div class="${alertClass} border px-4 py-3 rounded mb-4">${message}</div>`;
+        
+        if (type === 'success') {
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+    }
+
+    // Cancellation functions
+    function openCancelBookingModal(bookingId) {
+        selectedBookingId = bookingId;
+        document.getElementById('cancelBookingModal').classList.remove('hidden');
+        document.getElementById('cancelBookingModal').classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    // Setup cancellation reason handler
+    function setupCancellationHandlers() {
+        const cancellationReason = document.getElementById('cancellationReason');
+        if (cancellationReason) {
+            // Remove existing event listener by cloning
+            const newCancellationReason = cancellationReason.cloneNode(true);
+            cancellationReason.parentNode.replaceChild(newCancellationReason, cancellationReason);
+            
+            // Add event listener to new element
+            const newElement = document.getElementById('cancellationReason');
+            newElement.addEventListener('change', function() {
+        const reason = this.value;
+        if (reason === 'Other') {
+            document.getElementById('customReasonContainer').classList.remove('hidden');
+        } else {
+            document.getElementById('customReasonContainer').classList.add('hidden');
+        }
+    });
+        }
+    }
+
+    function closeCancelModal() {
+        document.getElementById('cancelBookingModal').classList.add('hidden');
+        document.getElementById('cancelBookingModal').classList.remove('show');
+        document.body.style.overflow = 'auto';
+        
+        document.getElementById('cancellationReason').value = '';
+        document.getElementById('customCancellationReason').value = '';
+        document.getElementById('successMessage').classList.add('hidden');
+        document.getElementById('reasonContainer').classList.remove('hidden');
+        document.getElementById('cancellationReason').disabled = false;
+    }
+
+    async function submitCancellation() {
+        const cancellationReason = document.getElementById('cancellationReason').value;
+        const customReason = document.getElementById('customCancellationReason').value;
+        const reasonToSubmit = cancellationReason === 'Other' ? customReason : cancellationReason;
+
+        if (!reasonToSubmit.trim()) {
+            alert('Please provide a reason for cancellation.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/bookings/${selectedBookingId}/cancel`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    cancellation_reason: reasonToSubmit,
+                }),
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                document.getElementById('successMessage').classList.remove('hidden');
+                document.getElementById('reasonContainer').classList.add('hidden');
+                document.getElementById('cancellationReason').disabled = true;
+                
+                // Refresh booking history after 2 seconds
+                setTimeout(() => {
+                    closeCancelModal();
+                    loadBookingHistory();
+                }, 2000);
+            } else {
+                alert(result.error || 'Failed to cancel booking');
+            }
+        } catch (error) {
+            console.error('Error canceling booking:', error);
+            alert('Failed to cancel booking. Please try again later.');
+        }
+    }
+
+    async function cancelBooking(bookingId) {
+        openCancelBookingModal(bookingId);
+    }
+
+    // Setup global event handlers
+    function setupGlobalHandlers() {
+        // Prevent multiple setups
+        if (globalHandlersSetup) {
+            console.log("Global handlers already setup, skipping...");
+            return;
+    }
+
+    // Close modals when clicking outside
+    window.addEventListener('click', function(e) {
+        if (e.target.id === 'bookingModal') {
+            closeBookingModal();
+        }
+        if (e.target.id === 'bookingHistoryModal') {
+            closeBookingHistory();
+        }
+        if (e.target.id === 'reviewModal') {
+            closeReviewModal();
+        }
+        if (e.target.id === 'reviewsModal') {
+            closeReviewsModal();
+        }
+    });
+
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', function(e) {
+        const sidebar = document.getElementById('sidebar');
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        
+        if (window.innerWidth < 768 && !sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
+            sidebar.classList.remove('sidebar-active');
+        }
+    });
+
+        // Mark as setup
+        globalHandlersSetup = true;
+        console.log("✅ Global handlers setup completed");
+    }
+</script>
+</body>
+</html>
+
+
+
+

@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puerto Galera Tourist Registration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom styles for better mobile experience */
+        @media (max-width: 640px) {
+            .modal-content {
+                max-height: 90vh;
+                overflow-y: auto;
+                padding-bottom: 80px; /* Extra padding to ensure form buttons are visible */
+            }
+        }
+        
+        /* Improve form field appearance on mobile */
+        input, select, textarea {
+            font-size: 16px !important; /* Prevents iOS zoom on focus */
+        }
+        
+        /* Custom scrollbar for better mobile scrolling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+    <!-- Add these styles to the head section -->
+    <style>
+        /* Prevent iOS zoom on input focus */
+        @media screen and (max-width: 767px) {
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+        }
+        
+        /* Improve scrolling on mobile */
+        .max-h-\[90vh\] {
+            max-height: 90vh;
+        }
+        
+        /* Add padding at the bottom to ensure form buttons are visible when scrolling */
+        #modal form {
+            padding-bottom: 20px;
+        }
+        
+        /* Make sticky elements work properly */
+        .sticky {
+            position: sticky;
+            z-index: 10;
+        }
+        
+        /* Improve form field appearance on small screens */
+        @media (max-width: 640px) {
+            input[type="file"] {
+                padding: 8px !important;
+            }
+            
+            .border {
+                border-width: 1px !important;
+            }
+            /* Sidebar Animation */
+        .sidebar-active {
+            transform: translateX(0) !important;
+        }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+      <!-- Sidebar -->
+<div id="sidebar" class="w-64 bg-blue-900 text-white p-5 space-y-6 fixed inset-y-0 left-0 transform -translate-x-full transition-all duration-300 ease-in-out md:relative md:translate-x-0 z-50">
+    <h2 class="text-2xl font-bold">GaleraGo</h2>
+    <nav class="space-y-2">
+        <a href="/user/home" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">Home</a>
+        <a href="/booking" class="block py-3 px-4 bg-blue-800 hover:bg-blue-600 rounded-md font-semibold">Booking</a>
+        <a href="/island" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">Island</a>
+        <a href="/navigation" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">Navigation</a>
+        <a href="/UserFAQ" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">FAQ</a>
+        <a href="/logout" class="block py-3 px-4 bg-red-600 hover:bg-red-700 rounded-md text-center font-semibold mt-6">Logout</a>
+    </nav>
+</div>
+      
+      <!-- Content Area -->
+      <div class="flex-1 flex flex-col">
+          <header class="bg-white shadow-md p-4 flex justify-between items-center">
+              <button id="menu-btn" class="md:hidden bg-blue-900 text-white px-3 py-2 rounded">☰</button>
+              <div class="flex items-center justify-between w-full">
+                <h1 class="text-xl font-semibold">Tourist Dashboard</h1>
+                <button onclick="fetchTouristHistory()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Get Reservation</button>
+              </div>
+          </header>
+            
+            <!-- Main Content -->
+            <main class="p-4 md:p-6 flex flex-col items-center overflow-y-auto">
+                <h2 class="text-xl font-semibold mb-4 md:mb-6 text-center">Select your registration type</h2>
+                <div id="success-message" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4 max-w-xl mx-auto text-center z-50">
+                        <strong class="font-bold">Success!</strong>
+                        <span id="success-text" class="block sm:inline ml-1"></span>
+                        <span class="absolute top-0 bottom-0 right-0 px-4 py-3 cursor-pointer" onclick="this.parentElement.classList.add('hidden');">
+                          <svg class="fill-current h-6 w-6 text-green-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                            <title>Close</title>
+                            <path d="M14.348 5.652a1 1 0 10-1.414-1.414L10 7.586 7.066 4.652A1 1 0 105.652 6.066L8.586 9 5.652 11.934a1 1 0 101.414 1.414L10 10.414l2.934 2.934a1 1 0 001.414-1.414L11.414 9l2.934-2.934z"/>
+                          </svg>
+                        </span>
+                      </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 w-full max-w-6xl">
+                    <div class="bg-white p-4 md:p-6 shadow-lg rounded-lg text-center">
+                        <h3 class="text-lg font-bold">Regular Tourists</h3>
+                        <p class="text-gray-600 mb-4">Accommodation booking required</p>
+                        <button type="button" onclick="showForm('Regular Tourist')" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 w-full sm:w-auto">Register</button>
+                    </div>
+                    
+                    <div class="bg-white p-4 md:p-6 shadow-lg rounded-lg text-center">
+                        <h3 class="text-lg font-bold">Day Tourists</h3>
+                        <p class="text-gray-600 mb-4">No overnight stay</p>
+                        <button type="button" onclick="showForm('Day Tourist')" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 w-full sm:w-auto">Register</button>
+                    </div>
+
+                    <div class="bg-white p-4 md:p-6 shadow-lg rounded-lg text-center sm:col-span-2 lg:col-span-1">
+                        <h3 class="text-lg font-bold">Resident</h3>
+                        <p class="text-gray-600 mb-4">Long-term stay</p>
+                        <button type="button" onclick="showForm('Resident')" class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 w-full sm:w-auto">Register</button>
+                    </div>
+                </div>
+                
+                <div class="bg-white p-4 md:p-6 rounded-2xl shadow-lg max-w-md mx-auto mt-6 md:mt-8 border border-gray-200 w-full">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Visitor Types</h3>
+                    <div class="space-y-3">
+                        <div class="p-3 md:p-4 bg-blue-50 border-l-4 border-blue-500 rounded-md">
+                            <strong class="text-blue-700">Day Visitor:</strong>
+                            <p class="text-gray-600 text-sm">Guests who visit for a single day without staying overnight. Limited access to certain areas.</p>
+                        </div>
+                        <div class="p-3 md:p-4 bg-green-50 border-l-4 border-green-500 rounded-md">
+                            <strong class="text-green-700">Resident:</strong>
+                            <p class="text-gray-600 text-sm">Individuals who live within the premises or have a long-term stay. Full access to facilities.</p>
+                        </div>
+                        <div class="p-3 md:p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded-md">
+                            <strong class="text-yellow-700">Regular Visitor:</strong>
+                            <p class="text-gray-600 text-sm">Frequent guests who visit multiple times but do not reside. May have membership benefits or discounts.</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+    <!-- History Modal -->
+    <div id="history-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4 hidden">
+        <div class="bg-white p-4 rounded-lg w-full max-w-2xl max-h-[90vh] overflow-y-auto relative">
+          <button onclick="closeHistory()" class="absolute top-2 right-2 text-gray-600 hover:text-gray-800 text-2xl font-bold">&times;</button>
+          <h2 class="text-lg font-semibold mb-4 text-center">Your Tourist Registration History</h2>
+          <div id="history-content" class="flex flex-col gap-4"></div>
+        </div>
+      </div>
+      
+        </div>
+    </div>
+    
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 flex items-start justify-center bg-black bg-opacity-50 hidden z-40 p-4 overflow-y-auto" aria-hidden="true">
+        <div class="bg-white p-4 md:p-6 shadow-lg rounded-lg w-full max-w-5xl relative my-4 md:my-0 max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal()" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-xl z-10">&times;</button>
+            <h3 id="modal-title" class="text-xl font-bold mb-4 md:mb-6 text-center sticky top-0 bg-white pt-2">Tourist Registration</h3>
+
+            <!-- Regular Tourist Form -->
+            <form id="regular-tourist-form" action="/register2" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 gap-4 hidden">
+                <input type="hidden" name="registration_type" value="Regular Tourist">
+            
+                <!-- Personal Information Section -->
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h4 class="text-lg font-medium text-blue-800 mb-3">Personal Information</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label for="email" class="block text-gray-700">Email</label>
+                            <input type="email" id="email" name="email" placeholder="Enter your email" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="phone" class="block text-gray-700">Phone Number</label>
+                            <input type="text" id="phone" name="phone" placeholder="Enter your phone number" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="first_name" class="block text-gray-700">First Name</label>
+                            <input type="text" id="first_name" name="first_name" placeholder="Enter your first name" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="last_name" class="block text-gray-700">Last Name</label>
+                            <input type="text" id="last_name" name="last_name" placeholder="Enter your last name" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                
+                        <div class="space-y-2">
+                            <label for="age" class="block text-gray-700">Age</label>
+                            <input type="number" id="age" name="age" placeholder="Enter your age" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="gender" class="block text-gray-700">Gender</label>
+                            <select id="gender" name="gender" class="border p-3 rounded w-full text-base" required>
+                                <option value="" selected disabled>Choose your gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="nationality" class="block text-gray-700">Nationality</label>
+                            <input type="text" id="nationality" name="nationality" placeholder="Enter your nationality" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="residence" class="block text-gray-700">Residence</label>
+                            <input type="text" id="residence" name="residence" placeholder="Enter your residence" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trip Details Section -->
+                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h4 class="text-lg font-medium text-green-800 mb-3">Trip Details</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label for="companions_12" class="block text-gray-700">Companions Aged 12 & Above</label>
+                            <input type="number" id="companions_12" name="companions_12" value="0" placeholder="Companions aged 12 & above" class="border p-3 rounded w-full text-base" min="0">
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="companions_below_12" class="block text-gray-700">Companions Below 12 Years</label>
+                            <input type="number" id="companions_below_12" name="companions_below_12" value="0" placeholder="Companions below 12 years" class="border p-3 rounded w-full text-base" min="0">
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="arrival_date" class="block text-gray-700">Arrival Date</label>
+                            <input type="date" id="arrival_date" name="arrival_date" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="departure_date" class="block text-gray-700">Departure Date</label>
+                            <input type="date" id="departure_date" name="departure_date" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2 sm:col-span-2">
+                            <label for="accommodation" class="block text-gray-700">Accommodation</label>
+                            <select id="accommodation" name="accommodation" class="border p-3 rounded w-full text-base" onchange="showHotelInfo()" required>
+                                <option value="" selected disabled>Select Accommodation</option>
+                                <option value="Amami Beach Resort">Amami Beach Resort</option>
+                                <option value="Amihan Del Sol">Amihan Del Sol</option>
+                                <option value="Angelyn's Dive Resort">Angelyn's Dive Resort</option>
+                            </select>
+                            <p id="hotel-info" class="text-gray-700 mt-2 text-sm"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Photo Upload Section -->
+                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <h4 class="text-lg font-medium text-yellow-800 mb-3">Photo Upload</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label for="picture" class="block text-gray-700">Upload Picture</label>
+                            <input type="file" id="picture" name="picture" accept="image/*" class="border p-3 rounded w-full text-base" onchange="previewImage(event)" required>
+                        </div>
+                        <div class="flex justify-center items-center">
+                            <img id="preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect width='200' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-size='14' text-anchor='middle' alignment-baseline='middle' font-family='Arial, sans-serif' fill='%23999999'%3EImage Preview%3C/text%3E%3C/svg%3E" alt="Placeholder image" class="h-40 w-40 object-cover rounded hidden border">
+                        </div>
+                    </div>
+                </div>
+                <!-- QR Code Display -->
+            <div id="qrcode" class="flex justify-center mt-4"></div>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-3 mt-4 sticky bottom-0 bg-white py-3">
+                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded w-full sm:w-auto">Submit</button>
+                    <button type="reset" onclick="resetForm('regular-tourist-form')" class="bg-gray-400 hover:bg-gray-500 text-white px-6 py-3 rounded w-full sm:w-auto">Reset</button>
+                </div>
+            </form>
+
+            <!-- Day Tourist Form -->
+            <form id="day-tourist-form" action="/register2" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 gap-4 hidden">
+                <input type="hidden" name="registration_type" value="Day Tourist">
+            
+                <!-- Personal Information Section -->
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h4 class="text-lg font-medium text-blue-800 mb-3">Personal Information</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label for="day_email" class="block text-gray-700">Email</label>
+                            <input type="email" id="day_email" name="email" placeholder="Enter your email" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                        <div class="space-y-2">
+                            <label for="day_phone" class="block text-gray-700">Phone Number</label>
+                            <input type="text" id="day_phone" name="phone" placeholder="Enter your phone number" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="day_first_name" class="block text-gray-700">First Name</label>
+                            <input type="text" id="day_first_name" name="first_name" placeholder="Enter your first name" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="day_last_name" class="block text-gray-700">Last Name</label>
+                            <input type="text" id="day_last_name" name="last_name" placeholder="Enter your last name" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                
+                        <div class="space-y-2">
+                            <label for="day_age" class="block text-gray-700">Age</label>
+                            <input type="number" id="day_age" name="age" placeholder="Enter your age" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="day_gender" class="block text-gray-700">Gender</label>
+                            <select id="day_gender" name="gender" class="border p-3 rounded w-full text-base" required>
+                                <option value="" selected disabled>Choose your gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="day_nationality" class="block text-gray-700">Nationality</label>
+                            <input type="text" id="day_nationality" name="nationality" placeholder="Enter your nationality" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="day_residence" class="block text-gray-700">Residence</label>
+                            <input type="text" id="day_residence" name="residence" placeholder="Enter your residence" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2 sm:col-span-2">
+                            <label for="day_is_resident" class="block text-gray-700">Are you a resident?</label>
+                            <select id="day_is_resident" name="is_resident" class="border p-3 rounded w-full text-base" required>
+                                <option value="" selected disabled>Select an option</option>
+                                <option value="Yes">Yes</option>
+                                <option value="No">No</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visit Details Section -->
+                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h4 class="text-lg font-medium text-green-800 mb-3">Visit Details</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label for="day_arrival_date" class="block text-gray-700">Visit Date</label>
+                            <input type="date" id="day_arrival_date" name="arrival_date" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="day_purpose" class="block text-gray-700">Purpose of Visit</label>
+                            <select id="day_purpose" name="purpose" class="border p-3 rounded w-full text-base" required>
+                                <option value="" selected disabled>Select purpose</option>
+                                <option value="Tourism">Tourism</option>
+                                <option value="Business">Business</option>
+                                <option value="Family Visit">Family Visit</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="day_companions_12" class="block text-gray-700">Companions Aged 12 & Above</label>
+                            <input type="number" id="day_companions_12" name="companions_12" value="0" placeholder="Companions aged 12 & above" class="border p-3 rounded w-full text-base" min="0">
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="day_companions_below_12" class="block text-gray-700">Companions Below 12 Years</label>
+                            <input type="number" id="day_companions_below_12" name="companions_below_12" value="0" placeholder="Companions below 12 years" class="border p-3 rounded w-full text-base" min="0">
+                        </div>
+                    
+                        <div class="space-y-2 sm:col-span-2">
+                            <label for="day_special_requests" class="block text-gray-700">Special Requests or Notes</label>
+                            <textarea id="day_special_requests" name="special_requests" placeholder="Any special requests or additional information" class="border p-3 rounded w-full text-base" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Photo Upload Section -->
+                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <h4 class="text-lg font-medium text-yellow-800 mb-3">Photo Upload</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label for="day_picture" class="block text-gray-700">Upload Picture</label>
+                            <input type="file" id="day_picture" name="picture" accept="image/*" class="border p-3 rounded w-full text-base" onchange="previewDayImage(event)" required>
+                        </div>
+                        <div class="flex justify-center items-center">
+                            <img id="day_preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect width='200' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-size='14' text-anchor='middle' alignment-baseline='middle' font-family='Arial, sans-serif' fill='%23999999'%3EImage Preview%3C/text%3E%3C/svg%3E" alt="Placeholder image" class="h-40 w-40 object-cover rounded hidden border">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-3 mt-4 sticky bottom-0 bg-white py-3">
+                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded w-full sm:w-auto">Submit</button>
+                    <button type="reset" onclick="resetForm('day-tourist-form')" class="bg-gray-400 hover:bg-gray-500 text-white px-6 py-3 rounded w-full sm:w-auto">Reset</button>
+                </div>
+            </form>
+
+            <!-- Resident Form -->
+            <form id="resident-form" action="/register2" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 gap-4 hidden">
+                <input type="hidden" name="registration_type" value="Resident">
+            
+                <!-- Resident Information Section -->
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h4 class="text-lg font-medium text-blue-800 mb-3">Resident Information</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label for="res_host_first_name" class="block text-gray-700">Resident First Name</label>
+                            <input type="text" id="res_host_first_name" name="host_first_name" placeholder="Enter resident's first name" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="res_host_last_name" class="block text-gray-700">Resident Last Name</label>
+                            <input type="text" id="res_host_last_name" name="host_last_name" placeholder="Enter resident's last name" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="res_host_email" class="block text-gray-700">Resident Email</label>
+                            <input type="email" id="res_host_email" name="host_email" placeholder="Enter resident's email" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="res_host_phone" class="block text-gray-700">Resident Phone Number</label>
+                            <input type="text" id="res_host_phone" name="host_phone" placeholder="Enter resident's phone number" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2 sm:col-span-2">
+                            <label for="res_host_address" class="block text-gray-700">Resident Address</label>
+                            <input type="text" id="res_host_address" name="host_address" placeholder="Enter resident's address" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    </div>
+                </div>
+            
+                <!-- Guest Personal Information Section -->
+                <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h4 class="text-lg font-medium text-green-800 mb-3">Guest Personal Information</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label for="res_email" class="block text-gray-700">Guest Email</label>
+                            <input type="email" id="res_email" name="email" placeholder="Enter guest's email" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                        <div class="space-y-2">
+                            <label for="res_phone" class="block text-gray-700">Guest Phone Number</label>
+                            <input type="text" id="res_phone" name="phone" placeholder="Enter guest's phone number" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="res_first_name" class="block text-gray-700">Guest First Name</label>
+                            <input type="text" id="res_first_name" name="first_name" placeholder="Enter guest's first name" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="res_last_name" class="block text-gray-700">Guest Last Name</label>
+                            <input type="text" id="res_last_name" name="last_name" placeholder="Enter guest's last name" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                
+                        <div class="space-y-2">
+                            <label for="res_age" class="block text-gray-700">Guest Age</label>
+                            <input type="number" id="res_age" name="age" placeholder="Enter guest's age" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="res_nationality" class="block text-gray-700">Guest Nationality</label>
+                            <input type="text" id="res_nationality" name="nationality" placeholder="Enter guest's nationality" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="res_gender" class="block text-gray-700">Guest Gender</label>
+                            <select id="res_gender" name="gender" class="border p-3 rounded w-full text-base" required>
+                                <option value="" selected disabled>Choose gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="res_residence" class="block text-gray-700">Guest Current Residence</label>
+                            <input type="text" id="res_residence" name="residence" placeholder="Enter guest's current residence" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visit Details Section -->
+                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                    <h4 class="text-lg font-medium text-yellow-800 mb-3">Visit Details</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label for="res_purpose" class="block text-gray-700">Purpose of Trip</label>
+                            <select id="res_purpose" name="purpose" class="border p-3 rounded w-full text-base" required>
+                                <option value="" selected disabled>Select purpose</option>
+                                <option value="Tourism">Tourism</option>
+                                <option value="Business">Business</option>
+                                <option value="Family Visit">Family Visit</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="res_arrival_date" class="block text-gray-700">Arrival Date</label>
+                            <input type="date" id="res_arrival_date" name="arrival_date" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="res_departure_date" class="block text-gray-700">Departure Date</label>
+                            <input type="date" id="res_departure_date" name="departure_date" class="border p-3 rounded w-full text-base" required>
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="res_companions_12" class="block text-gray-700">Guests Aged 12 & Above</label>
+                            <input type="number" id="res_companions_12" name="companions_12" value="0" placeholder="Number of guests" class="border p-3 rounded w-full text-base" min="0">
+                        </div>
+                    
+                        <div class="space-y-2">
+                            <label for="res_companions_below_12" class="block text-gray-700">Guests Below 12 Years</label>
+                            <input type="number" id="res_companions_below_12" name="companions_below_12" value="0" placeholder="Number of guests" class="border p-3 rounded w-full text-base" min="0">
+                        </div>
+                    
+                        <div class="space-y-2 sm:col-span-2">
+                            <label for="res_special_requests" class="block text-gray-700">Additional Information</label>
+                            <textarea id="res_special_requests" name="special_requests" placeholder="Any additional information about the guest's stay" class="border p-3 rounded w-full text-base" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Photo Upload Section -->
+                <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                    <h4 class="text-lg font-medium text-purple-800 mb-3">Guest Photo</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label for="res_picture" class="block text-gray-700">Upload Guest Picture</label>
+                            <input type="file" id="res_picture" name="picture" accept="image/*" class="border p-3 rounded w-full text-base" onchange="previewResidentImage(event)" required>
+                        </div>
+                        <div class="flex justify-center items-center">
+                            <img id="res_preview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect width='200' height='200' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-size='14' text-anchor='middle' alignment-baseline='middle' font-family='Arial, sans-serif' fill='%23999999'%3EImage Preview%3C/text%3E%3C/svg%3E" alt="Placeholder image" class="h-40 w-40 object-cover rounded hidden border">
+                        </div>
+                    </div>
+                </div>
+                <!-- QR Code Display -->
+                <div id="qrcode" class="flex justify-center mt-4"></div>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-3 mt-4 sticky bottom-0 bg-white py-3">
+                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded w-full sm:w-auto">Submit</button>
+                    <button type="reset" onclick="resetForm('resident-form')" class="bg-gray-400 hover:bg-gray-500 text-white px-6 py-3 rounded w-full sm:w-auto">Reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- QRcode Displaying -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+    <!-- Printing the QRcode with detailes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  document.getElementById('menu-btn').addEventListener('click', function () {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.toggle('sidebar-active');
+  });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Set min date for date inputs to today
+    const today = new Date().toISOString().split('T')[0];
+    const dateInputs = document.querySelectorAll('input[type="date"]');
+    dateInputs.forEach(input => {
+        input.min = today;
+    });
+    // Add direct event listener for the Get Reservation button
+     // Add direct event listener for the Get Reservation button
+     const reservationBtn = document.querySelector('button[onclick="fetchTouristHistory()"]');
+    if (reservationBtn) {
+        console.log("Found reservation button, adding event listener");
+        // Remove the inline onclick attribute and add a direct event listener
+        reservationBtn.removeAttribute('onclick');
+        reservationBtn.addEventListener('click', function() {
+            console.log("Reservation button clicked");
+            // Declare fetchTouristHistory before using it, assuming it's defined elsewhere
+            if (typeof fetchTouristHistory === 'function') {
+                fetchTouristHistory();
+            } else {
+                console.error("fetchTouristHistory is not defined.");
+            }
+        });
+    } else {
+        console.log("Reservation button not found");
+    }
+    
+    // Add event listeners to forms
+    const formIds = ['regular-tourist-form', 'day-tourist-form', 'resident-form'];
+    formIds.forEach(formId => {
+        const form = document.getElementById(formId);
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+                generateQRCodeAndSubmit(this); // Use 'this' to reference the form
+            });
+        }
+    });
+    
+    // Toggle sidebar on mobile
+    document.getElementById('menu-btn').addEventListener('click', function() {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('-translate-x-full');
+    });
+    
+    // Close modal when clicking outside (but not on the modal content)
+    document.getElementById('modal').addEventListener('click', function(event) {
+        if (event.target === this) {
+            closeModal();
+        }
+    });
+    
+    // Handle escape key to close modal
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape' && !document.getElementById('modal').classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+});
+
+// Updated fetchTouristHistory function
+function fetchTouristHistory() {
+    console.log("🔹 fetchTouristHistory called");
+    
+    const historyModal = document.getElementById('history-modal');
+    const historyContent = document.getElementById('history-content');
+    
+    // Show modal with loading state
+    if (historyModal) {
+        historyModal.classList.remove('hidden');
+    }
+    
+    if (historyContent) {
+        historyContent.innerHTML = `
+            <div class="text-center p-8">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p class="mt-4 text-gray-600">Loading your reservation history...</p>
+            </div>
+        `;
+    }
+    
+    fetch('/tourist/history', {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        console.log("🔹 History response status:", response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        return response.json();
+    })
+    .then(data => {
+        console.log("✅ History data received:", data);
+        
+        if (historyContent) {
+            if (!data || data.length === 0) {
+                historyContent.innerHTML = `
+                    <div class="text-center p-8">
+                        <div class="text-gray-400 text-6xl mb-4">📋</div>
+                        <p class="text-gray-600">No reservation history found.</p>
+                        <p class="text-gray-500 text-sm mt-2">Register for a tourist package to see your history here.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            historyContent.innerHTML = '';
+            
+            data.forEach((record, index) => {
+                const recordId = record.tourist_id || record.id || index;
+                
+                const div = document.createElement('div');
+                div.className = 'bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-4';
+                
+                div.innerHTML = `
+                   <div id="reservation-download-${recordId}" class="flex flex-col sm:flex-row bg-gradient-to-r from-blue-600 to-blue-800 text-white p-6 rounded-lg shadow-lg mb-4">
+    <!-- QR Code Section with Increased Size -->
+    <div class="flex-shrink-0 mr-6">
+        <canvas id="qr-${recordId}" class="border border-white rounded-md" width="200" height="200"></canvas>
+    </div>
+    
+    <!-- Contact and Registration Info Section -->
+    <div class="flex-grow text-center sm:text-left">
+        <h3 class="font-semibold text-2xl mb-2">${record.first_name} ${record.last_name}</h3>
+        <p class="font-medium text-lg mb-4">${record.registration_type || 'Tourist Registration'}</p>
+        
+        <!-- Contact Information -->
+        <div class="text-sm space-y-2">
+            <p><span class="font-medium">Email:</span> ${record.email || 'N/A'}</p>
+            <p><span class="font-medium">Phone:</span> ${record.phone || 'N/A'}</p>
+            <p><span class="font-medium">Location:</span> ${record.residence || 'N/A'}</p>
+            <p><span class="font-medium">Date:</span> ${record.created_at ? new Date(record.created_at).toLocaleDateString() : 'N/A'}</p>
+        </div>
+    </div>
+
+    <!-- Download Button Section on the Right -->
+    <div class="flex-shrink-0 mt-5 sm:mt-0">
+        <button onclick="downloadReservation('${recordId}')" 
+                class="px-6 py-3 bg-white text-blue-600 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-colors text-sm">
+            📄 Download PDF
+        </button>
+    </div>
+</div>
+
+<!-- Styles for the design -->
+<style>
+    /* Gradient Background */
+    .bg-gradient-to-r {
+        background-image: linear-gradient(to right, #3182ce, #2b6cb0);
+    }
+
+    /* Padding and Rounded Edges */
+    .p-6 {
+        padding: 1.5rem;
+    }
+
+    .rounded-lg {
+        border-radius: 0.5rem;
+    }
+
+    /* Text Styling */
+    .font-semibold {
+        font-weight: 600;
+    }
+
+    .text-white {
+        color: #ffffff;
+    }
+
+    .text-blue-600 {
+        color: #3182ce;
+    }
+
+    .font-medium {
+        font-weight: 500;
+    }
+
+    /* Shadow Effect */
+    .shadow-lg {
+        box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    /* QR Code Styling */
+    .border {
+        border-width: 2px;
+    }
+
+    /* Button Styling */
+    .bg-white {
+        background-color: #ffffff;
+    }
+
+    .text-blue-600 {
+        color: #3182ce;
+    }
+
+    .hover\:bg-gray-200:hover {
+        background-color: #edf2f7;
+    }
+
+    .focus\:outline-none:focus {
+        outline: none;
+    }
+
+    .focus\:ring-2:focus {
+        box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
+    }
+
+    .focus\:ring-blue-400:focus {
+        box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5);
+    }
+
+    .focus\:ring-offset-2:focus {
+        box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.5) inset;
+    }
+
+    .transition-colors {
+        transition: background-color 0.3s ease;
+    }
+
+    /* Adjustments for small screens */
+    @media (max-width: 640px) {
+        .flex-col {
+            flex-direction: column;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .sm\:flex-row {
+            flex-direction: column;
+        }
+    }
+</style>
+
+                `;
+                
+                historyContent.appendChild(div);
+                
+                // Generate QR code
+                setTimeout(() => {
+                    try {
+                        if (typeof QRCode !== 'undefined') {
+                            const canvas = document.getElementById(`qr-${recordId}`);
+                            if (canvas) {
+                                const qrText = `Name: ${record.first_name || 'N/A'} ${record.last_name || ''}, Phone: ${record.phone || 'N/A'}, Type: ${record.registration_type || 'Tourist'}`;
+                                
+                                QRCode.toCanvas(canvas, qrText, { 
+                                    width: 200,
+                                    margin: 2,
+                                    color: {
+                                        dark: '#000000',
+                                        light: '#FFFFFF'
+                                    }
+                                }, (error) => {
+                                    if (error) {
+                                        console.error('QR Code error:', error);
+                                        canvas.style.display = 'none';
+                                    }
+                                });
+                            }
+                        }
+                    } catch (e) {
+                        console.error("QR code generation error:", e);
+                    }
+                }, 100);
+            });
+        }
+    })
+    .catch(error => {
+        console.error("❌ Error fetching history:", error);
+        
+        if (historyContent) {
+            historyContent.innerHTML = `
+                <div class="text-center p-8">
+                    <div class="text-red-400 text-6xl mb-4">⚠️</div>
+                    <p class="text-red-600 font-medium">Error loading history</p>
+                    <p class="text-gray-600 text-sm mt-2">${error.message}</p>
+                    <button onclick="fetchTouristHistory()" 
+                            class="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                        Try Again
+                    </button>
+                </div>
+            `;
+        }
+    });
+}
+// Add this function to help debug your endpoints
+function debugEndpoint(url) {
+    console.log(`Testing endpoint: ${url}`);
+    
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.setRequestHeader('Accept', 'application/json');
+    xhr.withCredentials = true;
+    
+    xhr.onload = function() {
+        console.log(`Response status for ${url}:`, xhr.status);
+        console.log(`Response headers for ${url}:`, xhr.getAllResponseHeaders());
+        console.log(`Response body for ${url}:`, xhr.responseText.substring(0, 500) + (xhr.responseText.length > 500 ? '...' : ''));
+        
+        try {
+            const data = JSON.parse(xhr.responseText);
+            console.log(`Parsed JSON for ${url}:`, data);
+        } catch (e) {
+            console.error(`Failed to parse JSON for ${url}:`, e);
+        }
+    };
+    
+    xhr.onerror = function() {
+        console.error(`Network error for ${url}`);
+    };
+    
+    xhr.send();
+}
+
+function displayHistory(history) {
+  const historyContent = document.getElementById('history-content');
+  historyContent.innerHTML = ''; // Clear existing
+
+  if (!history.length) {
+    historyContent.innerHTML = '<p>No reservation history found.</p>';
+    return;
+  }
+
+  history.forEach(record => {
+    const div = document.createElement('div');
+    div.classList.add('bg-gray-100', 'p-4', 'rounded', 'shadow', 'mb-4', 'flex', 'items-center', 'gap-4');
+
+    div.innerHTML = `
+  <div id="reservation-download-${record.tourist_id}" class="flex flex-col sm:flex-row bg-white p-4 rounded shadow gap-4">
+    <div class="shrink-0">
+      <canvas id="qr-${record.tourist_id}"></canvas>
+    </div>
+    <div class="text-left">
+      <p><strong>Registration Type:</strong> ${record.registration_type}</p>
+      <p><strong>Name:</strong> ${record.first_name} ${record.last_name}</p>
+      <p><strong>Phone:</strong> ${record.phone}</p>
+      <p><strong>Date Registered:</strong> ${new Date(record.created_at).toLocaleDateString()}</p>
+    </div>
+  </div>
+  <button onclick="downloadReservation('${record.tourist_id}')" class="mt-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 w-fit">Download with QR</button>
+`;
+
+    historyContent.appendChild(div);
+
+    // Generate QR code on the canvas
+    QRCode.toCanvas(
+      document.getElementById(`qr-${record.tourist_id}`),
+      `Name: ${record.first_name} ${record.last_name}, Phone: ${record.phone}, Type: ${record.registration_type}`,
+      { width: 100 },
+      (error) => {
+        if (error) console.error('QR Code error:', error);
+      }
+    );
+  });
+
+  document.getElementById('history-modal').classList.remove('hidden');
+}
+
+function closeHistory() {
+  document.getElementById('history-modal').classList.add('hidden');
+}
+
+// Show the appropriate form based on registration type
+function showForm(type) {
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const regularForm = document.getElementById('regular-tourist-form');
+    const dayForm = document.getElementById('day-tourist-form');
+    const residentForm = document.getElementById('resident-form');
+    
+    // Hide all forms first
+    regularForm.classList.add('hidden');
+    dayForm.classList.add('hidden');
+    residentForm.classList.add('hidden');
+    
+    // Show the appropriate form
+    if (type === 'Regular Tourist') {
+        regularForm.classList.remove('hidden');
+    } else if (type === 'Day Tourist') {
+        dayForm.classList.remove('hidden');
+    } else if (type === 'Resident') {
+        residentForm.classList.remove('hidden');
+    }
+    
+    // Update modal title
+    modalTitle.textContent = type + ' Registration';
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    
+    // Scroll to top of modal
+    setTimeout(() => {
+        modal.scrollTo(0, 0);
+    }, 100);
+}
+
+function closeModal() {
+    const modal = document.getElementById('modal');
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+// Image preview functions
+function previewImage(event) {
+    const preview = document.getElementById('preview');
+    previewImageHelper(event, preview);
+}
+
+function previewDayImage(event) {
+    const preview = document.getElementById('day_preview');
+    previewImageHelper(event, preview);
+}
+
+function previewResidentImage(event) {
+    const preview = document.getElementById('res_preview');
+    previewImageHelper(event, preview);
+}
+
+function previewImageHelper(event, previewElement) {
+    const file = event.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            previewElement.src = e.target.result;
+            previewElement.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+    } else if (file) {
+        alert("Please upload a valid image file.");
+        event.target.value = ""; // Reset file input
+    }
+}
+
+function showHotelInfo() {
+    const hotelInfo = document.getElementById('hotel-info');
+    const selectedHotel = document.getElementById('accommodation').value;
+    const hotelDescriptions = {
+        "Amami Beach Resort": "A tropical paradise with beachside cottages and water activities.",
+        "Amihan Del Sol": "A luxurious resort with a panoramic view of the ocean.",
+        "Angelyn's Dive Resort": "A diving resort offering snorkeling and diving tours."
+    };
+    hotelInfo.textContent = hotelDescriptions[selectedHotel] || "";
+}
+
+function resetForm(formId) {
+    const form = document.getElementById(formId);
+    if (form) {
+        form.reset();
+        
+        // Reset image previews based on form type
+        if (formId === 'regular-tourist-form') {
+            document.getElementById('preview').classList.add('hidden');
+            document.getElementById('hotel-info').textContent = "";
+        } else if (formId === 'day-tourist-form') {
+            document.getElementById('day_preview').classList.add('hidden');
+        } else if (formId === 'resident-form') {
+            document.getElementById('res_preview').classList.add('hidden');
+        }
+        
+        // Clear QR code
+        const qrCodeContainer = document.getElementById("qrcode");
+        if (qrCodeContainer) {
+            qrCodeContainer.innerHTML = "";
+        }
+    }
+}
+
+function generateQRCodeAndSubmit(form) {
+    let firstName = '', lastName = '', email = '', phone = '';
+
+    // Detect which form and get relevant fields
+    if (form.id === 'regular-tourist-form') {
+        firstName = document.getElementById("first_name").value;
+        lastName = document.getElementById("last_name").value;
+        email = document.getElementById("email").value;
+        phone = document.getElementById("phone").value;
+    } else if (form.id === 'day-tourist-form') {
+        firstName = document.getElementById("day_first_name").value;
+        lastName = document.getElementById("day_last_name").value;
+        email = document.getElementById("day_email").value;
+        phone = document.getElementById("day_phone").value;
+    } else if (form.id === 'resident-form') {
+        firstName = document.getElementById("res_first_name").value;
+        lastName = document.getElementById("res_last_name").value;
+        email = document.getElementById("res_email").value;
+        phone = document.getElementById("res_phone").value;
+    }
+
+    const qrData = `Name: ${firstName} ${lastName}, Email: ${email}, Phone: ${phone}`;
+    const qrCodeContainer = document.getElementById("qrcode");
+    qrCodeContainer.innerHTML = ""; // Clear previous QR code
+
+    try {
+        // Generate QR code
+        QRCode.toCanvas(
+            document.createElement('canvas'), // Create a new canvas element
+            qrData, 
+            { width: 100 },
+            function (error, canvas) {
+                if (error) {
+                    console.error("QR Code Error:", error);
+                    // Continue with form submission even if QR code generation fails
+                    submitFormWithFetch(form);
+                    return;
+                }
+
+                qrCodeContainer.appendChild(canvas);
+
+                // Submit form data
+                submitFormWithFetch(form);
+            }
+        );
+    } catch (error) {
+        console.error("QR Code generation error:", error);
+        // Continue with form submission even if QR code generation fails
+        submitFormWithFetch(form);
+    }
+}
+
+function submitFormWithFetch(form) {
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn ? submitBtn.textContent : 'Submit';
+    
+    // Show loading state
+    if (submitBtn) {
+        submitBtn.textContent = 'Submitting...';
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+
+    console.log("🔹 Starting form submission...");
+
+    fetch('/register2', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin',
+        headers: {
+            'Accept': 'application/json'
+        }
+    })
+    .then(response => {
+        console.log("🔹 Response status:", response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+        }
+        
+        return response.json();
+    })
+    .then(data => {
+        console.log("✅ Success response:", data);
+        
+        if (data.success) {
+            // Show success message
+            const successMessage = document.getElementById('success-message');
+            const successText = document.getElementById('success-text');
+            
+            if (successText) {
+                successText.textContent = data.message || 'Registration successful!';
+            }
+            
+            if (successMessage) {
+                successMessage.classList.remove('hidden');
+                
+                // Auto-hide success message after 5 seconds
+                setTimeout(() => {
+                    successMessage.classList.add('hidden');
+                }, 5000);
+            }
+            
+            // Reset form and close modal
+            resetForm(form.id);
+            closeModal();
+            
+            // If QR code was generated, you can display it
+            if (data.qrImage) {
+                console.log("✅ QR code received");
+                // Optionally display the QR code immediately
+            }
+            
+            console.log("✅ Registration completed successfully");
+            
+        } else {
+            throw new Error(data.error || 'Registration failed');
+        }
+    })
+    .catch(error => {
+        console.error("❌ Submission error:", error);
+        
+        // Show error message
+        alert('Registration Error: ' + error.message);
+        
+        // You can also show a more user-friendly error message
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4';
+        errorDiv.innerHTML = `
+            <strong class="font-bold">Error!</strong>
+            <span class="block sm:inline ml-1">${error.message}</span>
+        `;
+        
+        // Insert error message at the top of the form
+        form.insertBefore(errorDiv, form.firstChild);
+        
+        // Remove error message after 5 seconds
+        setTimeout(() => {
+            if (errorDiv.parentNode) {
+                errorDiv.parentNode.removeChild(errorDiv);
+            }
+        }, 5000);
+    })
+    .finally(() => {
+        // Always reset button state
+        if (submitBtn) {
+            submitBtn.textContent = originalBtnText;
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+        
+        console.log("🔹 Form submission completed");
+    });
+}
+
+</script>
+<script>
+    async function downloadReservation(touristId) {
+        const element = document.getElementById(`reservation-download-${touristId}`);
+        if (!element) {
+            alert('Reservation data not found for download.');
+            return;
+        }
+
+        const canvas = await html2canvas(element);
+        const imgData = canvas.toDataURL('image/png');
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`reservation_${touristId}.pdf`);
+    }
+</script>
+      
+</body>
+</html>

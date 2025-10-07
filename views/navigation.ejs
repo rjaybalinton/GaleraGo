@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tourist Navigation - Puerto Galera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 3D Effect for Map */
+        #map {
+            height: 500px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            border: 3px solid #1e3a8a;
+        }
+
+        /* Sidebar Animation */
+        .sidebar-active {
+            transform: translateX(0) !important;
+        }
+
+        /* Location Info Panel */
+        #location-info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            padding: 15px;
+            display: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* Category Filters */
+        .category-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .category-filter {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .category-filter.active {
+            background-color: #1e3a8a;
+            color: white;
+        }
+
+        /* Custom Marker Icons */
+        .custom-div-icon {
+            background: none;
+            border: none;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #1e3a8a;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255,255,255,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div id="sidebar" class="w-64 bg-blue-900 text-white p-5 space-y-6 fixed inset-y-0 left-0 transform -translate-x-full transition-all duration-300 ease-in-out md:relative md:translate-x-0 z-50">
+            <h2 class="text-2xl font-bold">GaleraGo</h2>
+            <nav class="space-y-2">
+                <a href="/user/home" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">Home</a>
+                <a href="/booking" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">Booking</a>
+                <a href="/island" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">Island</a>
+                <a href="/navigation" class="block py-3 px-4 bg-blue-800 hover:bg-blue-600 rounded-md font-semibold">Navigation</a>
+                <a href="/UserFAQ" class="block py-3 px-4 bg-blue-700 hover:bg-blue-600 rounded-md font-semibold">FAQ</a>
+                
+                <a href="/logout" class="block py-3 px-4 bg-red-600 hover:bg-red-700 rounded-md text-center font-semibold">Logout</a>
+            </nav>
+        </div>
+        
+        <!-- Content Area -->
+        <div class="flex-1 flex flex-col">
+            <!-- Navbar -->
+            <header class="bg-white shadow-md p-4 flex justify-between items-center">
+                <button id="menu-btn" class="md:hidden bg-blue-900 text-white px-3 py-2 rounded">☰</button>
+                <h1 class="text-2xl font-semibold text-blue-900">Tourist Navigation</h1>
+                <div class="user-info text-blue-900 font-medium">
+                    <i class="fas fa-user-circle mr-2"></i>
+                    <%= (user && user.username) ? user.username : 'Guest' %>
+                </div>
+            </header>
+            
+            <!-- Main Content -->
+            <main class="p-6 relative">
+                <h2 class="text-xl font-bold text-blue-900">Explore Puerto Galera</h2>
+                <p class="text-gray-600 mb-4">Discover the best places to visit, dine, and relax.</p>
+
+                <!-- Category Filters -->
+                <div class="category-filters">
+                    <div class="category-filter active bg-blue-100 text-blue-800" data-category="all">All</div>
+                    <div class="category-filter bg-blue-100 text-blue-800" data-category="beach">Beaches</div>
+                    <div class="category-filter bg-green-100 text-green-800" data-category="park">Parks</div>
+                    <div class="category-filter bg-purple-100 text-purple-800" data-category="historical">Historical</div>
+                    <div class="category-filter bg-yellow-100 text-yellow-800" data-category="viewpoint">Viewpoints</div>
+                    <div class="category-filter bg-red-100 text-red-800" data-category="restaurant">Restaurants</div>
+                    <div class="category-filter bg-indigo-100 text-indigo-800" data-category="hotel">Hotels</div>
+                    <div class="category-filter bg-gray-100 text-gray-800" data-category="other">Other</div>
+                </div>
+
+                <!-- Map Controls -->
+                <div class="bg-white p-4 rounded-lg shadow-md mb-4">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="flex-1">
+                            <label for="destination" class="block text-sm font-medium text-gray-700 mb-1">Select Destination:</label>
+                            <select id="destination" class="w-full p-2 border border-gray-300 rounded-md">
+                                <option value="">Loading destinations...</option>
+                            </select>
+                        </div>
+                        <div class="flex-1">
+                            <label for="radius" class="block text-sm font-medium text-gray-700 mb-1">Nearby Radius (km):</label>
+                            <input type="range" id="radius" min="1" max="20" value="5" class="w-full">
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>1km</span>
+                                <span id="radius-value">5km</span>
+                                <span>20km</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-4">
+                        <button id="getDirections" class="flex-1 bg-blue-900 text-white py-2 px-4 rounded-md font-bold hover:bg-blue-800 transition flex items-center justify-center">
+                            <i class="fas fa-route mr-2"></i> Get Directions
+                        </button>
+                        <button id="findNearby" class="flex-1 bg-green-600 text-white py-2 px-4 rounded-md font-bold hover:bg-green-700 transition flex items-center justify-center">
+                            <i class="fas fa-search-location mr-2"></i> Find Nearby
+                        </button>
+                        <button id="clearRoute" class="flex-1 bg-gray-500 text-white py-2 px-4 rounded-md font-bold hover:bg-gray-600 transition flex items-center justify-center">
+                            <i class="fas fa-times mr-2"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Map Container -->
+                <div class="relative">
+                    <div id="map"></div>
+                    <div id="location-info" class="bg-white p-4 rounded-lg shadow-lg"></div>
+                    <div class="loading-container" id="loading">
+                        <div class="loading-spinner"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const menuBtn = document.getElementById('menu-btn');
+        const sidebar = document.getElementById('sidebar');
+        const destinationSelect = document.getElementById('destination');
+        const getDirectionsBtn = document.getElementById('getDirections');
+        const findNearbyBtn = document.getElementById('findNearby');
+        const clearRouteBtn = document.getElementById('clearRoute');
+        const locationInfo = document.getElementById('location-info');
+        const radiusSlider = document.getElementById('radius');
+        const radiusValue = document.getElementById('radius-value');
+        const loadingIndicator = document.getElementById('loading');
+        const categoryFilters = document.querySelectorAll('.category-filter');
+
+        // Global Variables
+        let map;
+        let routeControl;
+        let userMarker;
+        let locationMarkers = [];
+        let allLocations = [];
+        let activeCategory = 'all';
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Mobile menu toggle
+            menuBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('sidebar-active');
+            });
+
+            // Initialize the map
+            initMap();
+            
+            // Fetch locations from the database
+            fetchLocations();
+
+            // Set up event listeners
+            setupEventListeners();
+        });
+
+        // Initialize the Map
+        function initMap() {
+            // Create the map centered at Puerto Galera
+            map = L.map('map').setView([13.5025, 120.9674], 13);
+
+            // Add the tile layer (map style)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add user location marker if available
+            getUserLocation();
+        }
+
+        // Get user's current location
+        function getUserLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+
+                    // Create a custom marker for user location
+                    userMarker = L.marker([userLat, userLng], {
+                        icon: L.divIcon({
+                            html: '<i class="fas fa-user-circle" style="color: #1e3a8a; font-size: 30px;"></i>',
+                            className: 'custom-div-icon',
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 15]
+                        })
+                    }).addTo(map);
+
+                    userMarker.bindPopup('<b>Your Location</b>').openPopup();
+                    
+                    // Center map on user location
+                    map.setView([userLat, userLng], 14);
+                }, error => {
+                    console.error('Error getting user location:', error);
+                });
+            }
+        }
+
+        // Fetch locations from the database
+        async function fetchLocations() {
+            try {
+                showLoading(true);
+                const response = await fetch('/api/tourist-locations');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                allLocations = await response.json();
+                
+                // Populate the destination dropdown
+                populateDestinationDropdown(allLocations);
+                
+                // Add markers to the map
+                addLocationMarkers(allLocations);
+                
+                showLoading(false);
+            } catch (error) {
+                console.error('Error fetching locations:', error);
+                showLoading(false);
+                alert('Failed to load tourist locations. Please try again later.');
+            }
+        }
+
+        // Populate the destination dropdown
+        function populateDestinationDropdown(locations) {
+            destinationSelect.innerHTML = '<option value="">Select a destination</option>';
+            
+            locations.forEach(location => {
+                const option = document.createElement('option');
+                option.value = `${location.id}`;
+                option.textContent = location.name;
+                destinationSelect.appendChild(option);
+            });
+        }
+
+        // Add markers for all locations
+        function addLocationMarkers(locations) {
+            // Clear existing markers
+            clearLocationMarkers();
+            
+            // Add new markers
+            locations.forEach(location => {
+                if (activeCategory !== 'all' && location.category !== activeCategory) {
+                    return;
+                }
+                
+                const marker = createLocationMarker(location);
+                locationMarkers.push(marker);
+            });
+        }
+
+        // Create a marker for a location
+        function createLocationMarker(location) {
+            // Create a custom icon based on the location category
+            const marker = L.marker([location.latitude, location.longitude], {
+                icon: createCategoryIcon(location.category)
+            }).addTo(map);
+            
+            // Add popup with basic info
+            marker.bindPopup(`<b>${location.name}</b><br>${formatCategory(location.category)}`);
+            
+            // Add click event to show detailed info
+            marker.on('click', () => {
+                showLocationInfo(location);
+                
+                // Center map on the location
+                map.setView([location.latitude, location.longitude], 15);
+            });
+            
+            return marker;
+        }
+
+        // Create a custom icon based on the location category
+        function createCategoryIcon(category) {
+            // Define colors for different categories
+            const colors = {
+                beach: "#2E86C1",
+                waterfall: "#17A589",
+                mountain: "#D35400",
+                historical: "#884EA0",
+                park: "#27AE60",
+                viewpoint: "#F1C40F",
+                cave: "#7D3C98",
+                island: "#1ABC9C",
+                police: "#3498DB",
+                barangay: "fa-building",
+                fire: "#E74C3C",
+                hospital: "#E74C3C",
+                government: "#34495E",
+                restaurant: "#F39C12",
+                cafe: "#D35400",
+                mall: "#8E44AD",
+                market: "#F1C40F",
+                hotel: "#3498DB",
+                shop: "#16A085",
+                transportation: "#7F8C8D",
+                school: "#2C3E50",
+                church: "#95A5A6",
+                other: "#BDC3C7",
+                default: "#3498DB",
+            };
+
+            // Define icons for different categories
+            const icons = {
+                beach: "fa-umbrella-beach",
+                waterfall: "fa-water",
+                mountain: "fa-mountain",
+                historical: "fa-landmark",
+                park: "fa-tree",
+                viewpoint: "fa-binoculars",
+                cave: "fa-dungeon",
+                island: "fa-island-tropical",
+                police: "fa-shield-alt",
+                barangay: "fa-building",
+                fire: "fa-fire-extinguisher",
+                hospital: "fa-hospital",
+                government: "fa-city",
+                restaurant: "fa-utensils",
+                cafe: "fa-coffee",
+                mall: "fa-shopping-bag",
+                market: "fa-store",
+                hotel: "fa-hotel",
+                shop: "fa-store-alt",
+                transportation: "fa-bus",
+                school: "fa-school",
+                church: "fa-church",
+                other: "fa-map-pin",
+                default: "fa-map-marker-alt",
+            };
+
+            const color = colors[category] || colors.default;
+            const iconClass = icons[category] || icons.default;
+
+            return L.divIcon({
+                html: `<i class="fas ${iconClass}" style="color: ${color}; font-size: 24px;"></i>`,
+                className: 'custom-div-icon',
+                iconSize: [30, 30],
+                iconAnchor: [15, 30],
+                popupAnchor: [0, -30],
+            });
+        }
+
+        // Format category for display
+        function formatCategory(category) {
+            const categories = {
+                beach: "Beach",
+                waterfall: "Waterfall",
+                mountain: "Mountain",
+                historical: "Historical Site",
+                park: "Park",
+                viewpoint: "Viewpoint",
+                cave: "Cave",
+                island: "Island",
+                police: "Police Station",
+                barangay: "Barangay Hall",
+                fire: "Fire Station",
+                hospital: "Hospital/Health Center",
+                government: "Government Office",
+                restaurant: "Restaurant",
+                cafe: "Coffee Shop/Cafe",
+                mall: "Mall/Shopping Center",
+                market: "Market",
+                hotel: "Hotel/Resort",
+                shop: "Shop/Store",
+                transportation: "Transportation Hub",
+                school: "School/University",
+                church: "Church/Religious Site",
+                other: "Other Location",
+                default: "Tourist Spot",
+            };
+
+            return categories[category] || categories.default;
+        }
+
+        // Show detailed information about a location
+        function showLocationInfo(location) {
+            locationInfo.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <h3 class="text-lg font-bold text-blue-900">${location.name}</h3>
+                    <button class="text-gray-500 hover:text-gray-700" onclick="document.getElementById('location-info').style.display = 'none';">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="mt-2">
+                    <span class="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+                        ${formatCategory(location.category)}
+                    </span>
+                    ${location.rating ? `
+                        <span class="inline-block px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full ml-1">
+                            <i class="fas fa-star text-yellow-500"></i> ${location.rating}/5
+                        </span>
+                    ` : ''}
+                </div>
+                ${location.image ? `
+                    <div class="mt-3">
+                        <img src="/uploads/locations/${location.image}" alt="${location.name}" class="w-full h-40 object-cover rounded-lg">
+                    </div>
+                ` : ''}
+                <p class="mt-3 text-gray-700">${location.description}</p>
+                
+                <div class="mt-4 space-y-2">
+                    <div class="flex items-start">
+                        <i class="fas fa-map-marker-alt text-red-500 mt-1 mr-2"></i>
+                        <span class="text-gray-700">${location.address}</span>
+                    </div>
+                    
+                    ${location.opening_hours ? `
+                        <div class="flex items-start">
+                            <i class="fas fa-clock text-blue-500 mt-1 mr-2"></i>
+                            <span class="text-gray-700">${location.opening_hours}</span>
+                        </div>
+                    ` : ''}
+                    
+                    ${location.contact_info ? `
+                        <div class="flex items-start">
+                            <i class="fas fa-phone text-green-500 mt-1 mr-2"></i>
+                            <span class="text-gray-700">${location.contact_info}</span>
+                        </div>
+                    ` : ''}
+                    
+                    ${location.website ? `
+                        <div class="flex items-start">
+                            <i class="fas fa-globe text-purple-500 mt-1 mr-2"></i>
+                            <a href="${location.website}" target="_blank" class="text-blue-600 hover:underline">${location.website}</a>
+                        </div>
+                    ` : ''}
+                    
+                    ${location.entrance_fee ? `
+                        <div class="flex items-start">
+                            <i class="fas fa-ticket-alt text-orange-500 mt-1 mr-2"></i>
+                            <span class="text-gray-700">Entrance Fee: ${location.entrance_fee}</span>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="mt-4 flex justify-between">
+                    <button onclick="getDirectionsToLocation(${location.id})" class="bg-blue-900 text-white py-2 px-4 rounded-md text-sm font-semibold hover:bg-blue-800 transition">
+                        <i class="fas fa-route mr-1"></i> Get Directions
+                    </button>
+                    <button onclick="shareLocation(${location.id})" class="bg-green-600 text-white py-2 px-4 rounded-md text-sm font-semibold hover:bg-green-700 transition">
+                        <i class="fas fa-share-alt mr-1"></i> Share
+                    </button>
+                </div>
+            `;
+            
+            locationInfo.style.display = 'block';
+        }
+
+        // Get directions to a specific location
+        function getDirectionsToLocation(locationId) {
+            const location = allLocations.find(loc => loc.id === locationId);
+            
+            if (!location) {
+                alert('Location not found');
+                return;
+            }
+            
+            if (!userMarker) {
+                alert('Your location is not available. Please allow location access and try again.');
+                return;
+            }
+            
+            const userLatLng = userMarker.getLatLng();
+            
+            // Clear existing route
+            if (routeControl) {
+                map.removeControl(routeControl);
+            }
+            
+            // Create new route
+            routeControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(userLatLng.lat, userLatLng.lng),
+                    L.latLng(location.latitude, location.longitude)
+                ],
+                routeWhileDragging: true,
+                lineOptions: {
+                    styles: [{ color: '#1e3a8a', opacity: 0.7, weight: 5 }]
+                },
+                createMarker: function(i, waypoint, n) {
+                    if (i === 0) {
+                        return L.marker(waypoint.latLng, {
+                            icon: L.divIcon({
+                                html: '<i class="fas fa-user-circle" style="color: #1e3a8a; font-size: 30px;"></i>',
+                                className: 'custom-div-icon',
+                                iconSize: [30, 30],
+                                iconAnchor: [15, 15]
+                            })
+                        });
+                    } else {
+                        return L.marker(waypoint.latLng, {
+                            icon: createCategoryIcon(location.category)
+                        });
+                    }
+                }
+            }).addTo(map);
+        }
+
+        // Share a location
+        function shareLocation(locationId) {
+            const location = allLocations.find(loc => loc.id === locationId);
+            
+            if (!location) {
+                alert('Location not found');
+                return;
+            }
+            
+            // Create share URL
+            const shareUrl = `${window.location.origin}/navigation?location=${locationId}`;
+            
+            // Check if Web Share API is available
+            if (navigator.share) {
+                navigator.share({
+                    title: `Visit ${location.name} in Puerto Galera`,
+                    text: `Check out ${location.name} in Puerto Galera: ${location.description.substring(0, 100)}...`,
+                    url: shareUrl
+                }).catch(error => {
+                    console.error('Error sharing:', error);
+                    fallbackShare(shareUrl);
+                });
+            } else {
+                fallbackShare(shareUrl);
+            }
+        }
+
+        // Fallback share method
+        function fallbackShare(url) {
+            // Copy to clipboard
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Link copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                prompt('Copy this link to share:', url);
+            });
+        }
+
+        // Find nearby locations
+        async function findNearbyLocations() {
+            if (!userMarker) {
+                alert('Your location is not available. Please allow location access and try again.');
+                return;
+            }
+            
+            const userLatLng = userMarker.getLatLng();
+            const radius = radiusSlider.value;
+            
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`/api/nearby-locations?lat=${userLatLng.lat}&lng=${userLatLng.lng}&radius=${radius}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                const nearbyLocations = await response.json();
+                
+                // Clear existing markers
+                clearLocationMarkers();
+                
+                // Add markers for nearby locations
+                nearbyLocations.forEach(location => {
+                    if (activeCategory !== 'all' && location.category !== activeCategory) {
+                        return;
+                    }
+                    
+                    const marker = createLocationMarker(location);
+                    locationMarkers.push(marker);
+                    
+                    // Add distance information to the popup
+                    marker.setPopupContent(`
+                        <b>${location.name}</b><br>
+                        ${formatCategory(location.category)}<br>
+                        <span class="text-sm text-gray-600">Distance: ${location.distance.toFixed(2)} km</span>
+                    `);
+                });
+                
+                // Update the destination dropdown with nearby locations
+                populateDestinationDropdown(nearbyLocations);
+                
+                showLoading(false);
+                
+                // Show a message with the number of locations found
+                alert(`Found ${nearbyLocations.length} locations within ${radius} km of your position.`);
+            } catch (error) {
+                console.error('Error finding nearby locations:', error);
+                showLoading(false);
+                alert('Failed to find nearby locations. Please try again later.');
+            }
+        }
+
+        // Clear all location markers
+        function clearLocationMarkers() {
+            locationMarkers.forEach(marker => {
+                map.removeLayer(marker);
+            });
+            
+            locationMarkers = [];
+        }
+
+        // Show or hide loading indicator
+        function showLoading(show) {
+            loadingIndicator.style.display = show ? 'flex' : 'none';
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Get directions button
+            getDirectionsBtn.addEventListener('click', () => {
+                const locationId = parseInt(destinationSelect.value);
+                
+                if (!locationId) {
+                    alert('Please select a destination.');
+                    return;
+                }
+                
+                getDirectionsToLocation(locationId);
+            });
+            
+            // Find nearby button
+            findNearbyBtn.addEventListener('click', findNearbyLocations);
+            
+            // Clear route button
+            clearRouteBtn.addEventListener('click', () => {
+                // Clear route
+                if (routeControl) {
+                    map.removeControl(routeControl);
+                    routeControl = null;
+                }
+                
+                // Hide location info
+                locationInfo.style.display = 'none';
+                
+                // Reload all locations
+                fetchLocations();
+            });
+            
+            // Radius slider
+            radiusSlider.addEventListener('input', () => {
+                radiusValue.textContent = `${radiusSlider.value}km`;
+            });
+            
+            // Category filters
+            categoryFilters.forEach(filter => {
+                filter.addEventListener('click', () => {
+                    // Update active category
+                    activeCategory = filter.dataset.category;
+                    
+                    // Update active filter styling
+                    categoryFilters.forEach(f => f.classList.remove('active'));
+                    filter.classList.add('active');
+                    
+                    // Reload markers with the selected category
+                    addLocationMarkers(allLocations);
+                });
+            });
+            
+            // Check for location parameter in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const locationParam = urlParams.get('location');
+            
+            if (locationParam) {
+                // Load the location details after a short delay to ensure the map is ready
+                setTimeout(() => {
+                    const locationId = parseInt(locationParam);
+                    const location = allLocations.find(loc => loc.id === locationId);
+                    
+                    if (location) {
+                        // Center map on the location
+                        map.setView([location.latitude, location.longitude], 15);
+                        
+                        // Show location info
+                        showLocationInfo(location);
+                        
+                        // Select the location in the dropdown
+                        destinationSelect.value = locationId;
+                    }
+                }, 1000);
+            }
+        }
+
+        // Make functions available globally
+        window.getDirectionsToLocation = getDirectionsToLocation;
+        window.shareLocation = shareLocation;
+    </script>
+</body>
+</html>
