@@ -1,3 +1,6 @@
+// Load environment variables
+require('dotenv').config();
+
 const express = require("express")
 const session = require("express-session")
 const path = require("path")
@@ -11,6 +14,7 @@ const bookingsRouter = require("./routes/bookings")
 const providerRoutes = require("./routes/providerRoutes")
 const reviewRoutes = require("./routes/reviewRoutes") // Add this line
 const ensureLoggedIn = require('./middleware/sessionAuth');
+const { router: gmailRoutes } = require('./middleware/gmailAuth');
 const app = express()
 const cors = require("cors")
 
@@ -24,15 +28,17 @@ app.set("view engine", "ejs")
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 
-// Sessions
+// Sessions - Updated for production
 app.use(
   session({
-    secret: "secret-key",
+    secret: process.env.SESSION_SECRET || "your-very-secure-secret-key-change-this",
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false, // Changed to false for security
     cookie: { 
-      secure: false,
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      secure: process.env.NODE_ENV === 'production', // true in production
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      httpOnly: true, // Added for security
+      sameSite: 'lax' // Added for security
     },
   }),
 )
@@ -49,6 +55,7 @@ app.use("/", routes)
 app.use("/admin", adminRoutes)
 app.use("/provider", providerRoutes)
 app.use("/", touristRoutes)
+app.use("/", gmailRoutes) // Gmail OAuth2 routes
 app.use('/admin', ensureLoggedIn);
 
 // Start Server
