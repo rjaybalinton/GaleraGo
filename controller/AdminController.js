@@ -769,10 +769,24 @@ createAdminAccount: async (req, res) => {
   getAgeGenderReport: async (req, res) => {
     try {
       console.log('Age-gender report request received');
+      console.log('Session user:', req.session.user);
+      console.log('User type:', req.session.user?.user_type);
+      console.log('Environment:', process.env.NODE_ENV);
       
       if (!req.session.user || req.session.user.user_type !== "admin") {
         console.log('Unauthorized access attempt to age-gender report');
-        return res.status(403).json({ error: "Unauthorized" })
+        return res.status(403).json({ 
+          error: "Unauthorized",
+          details: "Admin access required",
+          sessionExists: !!req.session.user,
+          userType: req.session.user?.user_type || 'none'
+        })
+      }
+
+      // Add database connection check
+      const db = require('../config/db');
+      if (!db) {
+        throw new Error('Database connection not available');
       }
 
       console.log('Fetching age-gender data...');
@@ -783,7 +797,9 @@ createAdminAccount: async (req, res) => {
 
       console.log('Age-gender data fetched:', { 
         genderCount: byGender?.length || 0, 
-        ageCount: byAge?.length || 0 
+        ageCount: byAge?.length || 0,
+        sampleGender: byGender?.slice(0, 2),
+        sampleAge: byAge?.slice(0, 2)
       });
 
       res.json({ byGender, byAge })
