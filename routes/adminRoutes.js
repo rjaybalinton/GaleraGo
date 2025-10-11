@@ -899,4 +899,7 @@ router.post("/create-admin", AdminController.createAdminAccount)
 
 router.get("/reports/age-gender-data", AdminController.getAgeGenderReport)
 
+// Monthly chart data route
+router.get("/reports/monthly-chart", AdminController.getMonthlyChartData)
+
 module.exports = router

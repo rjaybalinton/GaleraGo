@@ -354,10 +354,15 @@ const UserController = {
       // Check if email credentials are configured
       const emailUser = process.env.EMAIL_USER || "rjaybalinton833@gmail.com"
       const emailPass = process.env.EMAIL_PASS || "zwmi zdfr bkao ddso"
-      
+      const isRender = process.env.RENDER
+      const isProduction = process.env.NODE_ENV === 'production' || isRender
+
       console.log("🔧 Email Configuration:")
+      console.log(`  - Environment: ${isRender ? 'Render.com' : isProduction ? 'Production' : 'Development'}`)
       console.log(`  - EMAIL_USER: ${emailUser}`)
       console.log(`  - EMAIL_PASS: ${emailPass ? '***' + emailPass.slice(-4) : 'NOT SET'}`)
+      console.log(`  - RENDER: ${isRender ? 'YES' : 'NO'}`)
+      console.log(`  - NODE_ENV: ${process.env.NODE_ENV || 'undefined'}`)
       
       // For development/testing, always show the code in console
       console.log("=".repeat(60))
@@ -380,23 +385,46 @@ const UserController = {
         console.log("📧 Attempting to send email...")
         console.log(`📧 Sending to: ${email}`)
         
+        // Configure transporter based on environment
+        const isRender = process.env.RENDER
+        const isProduction = process.env.NODE_ENV === 'production' || isRender
+        console.log(`🌍 Environment: ${isRender ? 'Render.com' : isProduction ? 'Production' : 'Development'}`)
+        
+        // Use more aggressive settings for Render.com
         const transporter = nodemailer.createTransport({
           service: "gmail",
           host: "smtp.gmail.com",
-          port: 587,
-          secure: false, // true for 465, false for other ports
+          port: isRender ? 465 : (isProduction ? 465 : 587), // Always use SSL on Render
+          secure: isRender || isProduction, // true for 465, false for other ports
           auth: {
             user: emailUser,
             pass: emailPass,
           },
-          // Add timeout and connection settings
-          connectionTimeout: 60000,
-          greetingTimeout: 30000,
-          socketTimeout: 60000,
+          // Very aggressive settings for Render.com
+          connectionTimeout: isRender ? 10000 : (isProduction ? 20000 : 60000),
+          greetingTimeout: isRender ? 5000 : (isProduction ? 10000 : 30000),
+          socketTimeout: isRender ? 10000 : (isProduction ? 20000 : 60000),
+          pool: false, // Disable pooling on Render
+          maxConnections: 1,
+          maxMessages: 1,
           tls: {
             rejectUnauthorized: false,
-            ciphers: 'SSLv3'
-          }
+            ciphers: isRender ? 'TLSv1.2' : (isProduction ? 'TLSv1.2' : 'SSLv3'),
+            minVersion: isRender ? 'TLSv1.2' : undefined
+          },
+          // Additional settings for cloud platforms
+          requireTLS: true,
+          ignoreTLS: false,
+          debug: false, // Disable debug in production
+          // Render.com specific settings
+          ...(isRender && {
+            logger: false,
+            debug: false,
+            pool: false,
+            maxConnections: 1,
+            rateDelta: 20000,
+            rateLimit: 5
+          })
         })
 
         // Verify transporter configuration
@@ -505,48 +533,141 @@ This is an automated message from GaleraGo GPS.
         emailError = emailErr.message
         emailSent = false
         
-        // Try alternative email configuration if first attempt fails
-        if (emailErr.code === 'EAUTH' || emailErr.code === 'ECONNECTION') {
-          console.log("🔄 Trying alternative email configuration...")
-          try {
-            const altTransporter = nodemailer.createTransport({
-              service: "gmail",
-              host: "smtp.gmail.com",
-              port: 465,
-              secure: true,
-              auth: {
-                user: emailUser,
-                pass: emailPass,
-              },
-              tls: {
-                rejectUnauthorized: false
+        // Try alternative email configurations if first attempt fails
+        if (emailErr.code === 'EAUTH' || emailErr.code === 'ECONNECTION' || emailErr.code === 'ETIMEDOUT') {
+          console.log("🔄 Trying alternative email configurations...")
+          
+          // Try different configurations optimized for cloud hosting
+          const altConfigs = [
+            {
+              name: "Gmail SSL (Port 465) - Cloud Optimized",
+              config: {
+                service: "gmail",
+                host: "smtp.gmail.com",
+                port: 465,
+                secure: true,
+                auth: { user: emailUser, pass: emailPass },
+                tls: { 
+                  rejectUnauthorized: false,
+                  ciphers: 'TLSv1.2',
+                  minVersion: 'TLSv1.2'
+                },
+                connectionTimeout: 15000,
+                greetingTimeout: 8000,
+                socketTimeout: 15000,
+                pool: false,
+                maxConnections: 1
               }
-            })
+            },
+            {
+              name: "Gmail TLS (Port 587) - Cloud Optimized",
+              config: {
+                service: "gmail",
+                host: "smtp.gmail.com",
+                port: 587,
+                secure: false,
+                auth: { user: emailUser, pass: emailPass },
+                tls: { 
+                  rejectUnauthorized: false,
+                  ciphers: 'TLSv1.2',
+                  minVersion: 'TLSv1.2'
+                },
+                connectionTimeout: 15000,
+                greetingTimeout: 8000,
+                socketTimeout: 15000,
+                pool: false,
+                maxConnections: 1
+              }
+            },
+            {
+              name: "Gmail with Minimal Settings",
+              config: {
+                service: "gmail",
+                host: "smtp.gmail.com",
+                port: 465,
+                secure: true,
+                auth: { user: emailUser, pass: emailPass },
+                tls: { rejectUnauthorized: false },
+                connectionTimeout: 10000,
+                greetingTimeout: 5000,
+                socketTimeout: 10000
+              }
+            }
+          ]
+          
+          for (const altConfig of altConfigs) {
+            try {
+              console.log(`🔄 Trying ${altConfig.name}...`)
+              const altTransporter = nodemailer.createTransport(altConfig.config)
+              
+              await altTransporter.verify()
+              console.log(`✅ ${altConfig.name} verified successfully`)
+              
+              const altResult = await altTransporter.sendMail(mailOptions)
+              console.log(`✅ Email sent via ${altConfig.name}!`)
+              console.log(`  - Message ID: ${altResult.messageId}`)
+              emailSent = true
+              emailError = null
+              break // Exit loop on success
+              
+            } catch (altErr) {
+              console.log(`❌ ${altConfig.name} failed: ${altErr.message}`)
+              continue // Try next configuration
+            }
+          }
+          
+          if (!emailSent) {
+            console.error("❌ All alternative email methods failed")
             
-            await altTransporter.verify()
-            console.log("✅ Alternative transporter verified")
-            
-            const altResult = await altTransporter.sendMail(mailOptions)
-            console.log("✅ Email sent via alternative method!")
-            console.log(`  - Message ID: ${altResult.messageId}`)
-            emailSent = true
-            emailError = null
-          } catch (altErr) {
-            console.error("❌ Alternative email method also failed:", altErr.message)
+            // For Render.com, try one more approach with minimal configuration
+            if (isRender) {
+              console.log("🔄 Trying Render.com specific fallback...")
+              try {
+                const renderTransporter = nodemailer.createTransport({
+                  service: "gmail",
+                  host: "smtp.gmail.com",
+                  port: 465,
+                  secure: true,
+                  auth: { user: emailUser, pass: emailPass },
+                  tls: { rejectUnauthorized: false },
+                  connectionTimeout: 5000,
+                  greetingTimeout: 3000,
+                  socketTimeout: 5000
+                })
+                
+                const renderResult = await renderTransporter.sendMail(mailOptions)
+                console.log("✅ Email sent via Render.com fallback!")
+                console.log(`  - Message ID: ${renderResult.messageId}`)
+                emailSent = true
+                emailError = null
+              } catch (renderErr) {
+                console.error("❌ Render.com fallback also failed:", renderErr.message)
+              }
+            }
           }
         }
       }
 
       // Return response based on email sending status
+      let responseMessage = ""
+      if (emailSent) {
+        responseMessage = "✅ Reset code sent to your email successfully! Please check your inbox and spam folder."
+      } else {
+        responseMessage = `⚠️ Reset code generated but email sending failed: ${emailError}`
+        if (isRender) {
+          responseMessage += "\n\n⚠️ Note: This is running on Render.com. Email delivery may be delayed or blocked by network policies."
+        }
+        responseMessage += `\n\nFor testing purposes, use this code: ${resetCode}`
+      }
+      
       res.json({ 
-        message: emailSent 
-          ? "✅ Reset code sent to your email successfully! Please check your inbox and spam folder."
-          : `⚠️ Reset code generated but email sending failed. Please contact support or check server console for the code: ${resetCode}`,
+        message: responseMessage,
         success: true,
         debug_code: resetCode, // Always include for testing
         email_sent: emailSent,
         email_error: emailError,
-        reset_code: resetCode // Include reset code in response
+        reset_code: resetCode, // Include reset code in response
+        environment: isRender ? 'render' : isProduction ? 'production' : 'development'
       })
     } catch (error) {
       console.error("❌ Error in forgotPassword:", error)
