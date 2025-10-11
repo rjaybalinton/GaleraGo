@@ -353,7 +353,7 @@ const UserController = {
 
       // Check if email credentials are configured
       const emailUser = process.env.EMAIL_USER || "rjaybalinton833@gmail.com"
-      const emailPass = process.env.EMAIL_PASS || "pras wcbc wxti bzyh"
+      const emailPass = process.env.EMAIL_PASS || "zwmi zdfr bkao ddso"
       
       console.log("🔧 Email Configuration:")
       console.log(`  - EMAIL_USER: ${emailUser}`)
@@ -378,6 +378,7 @@ const UserController = {
       // Try to send email
       try {
         console.log("📧 Attempting to send email...")
+        console.log(`📧 Sending to: ${email}`)
         
         const transporter = nodemailer.createTransport({
           service: "gmail",
@@ -393,7 +394,8 @@ const UserController = {
           greetingTimeout: 30000,
           socketTimeout: 60000,
           tls: {
-            rejectUnauthorized: false
+            rejectUnauthorized: false,
+            ciphers: 'SSLv3'
           }
         })
 
@@ -403,30 +405,85 @@ const UserController = {
         console.log("✅ Email transporter verified successfully")
 
         const mailOptions = {
-          from: `GaleraGo GPS <${emailUser}>`,
+          from: {
+            name: "GaleraGo GPS",
+            address: emailUser
+          },
           to: email,
-          subject: "Password Reset Code - GaleraGo GPS",
+          subject: "🔐 Password Reset Code - GaleraGo GPS",
           html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #1e3a8a;">Password Reset Request</h2>
-              <p>Hello ${user.first_name || 'User'},</p>
-              <p>You have requested to reset your password for your GaleraGo GPS account.</p>
-              <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
-                <h3 style="color: #1e3a8a; margin: 0;">Your Reset Code</h3>
-                <div style="font-size: 32px; font-weight: bold; color: #1e3a8a; letter-spacing: 4px; margin: 10px 0;">${resetCode}</div>
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Password Reset</title>
+            </head>
+            <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f8fafc;">
+              <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px; text-align: center;">
+                  <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">GaleraGo GPS</h1>
+                  <p style="color: #e0e7ff; margin: 10px 0 0 0; font-size: 16px;">Password Reset Request</p>
+                </div>
+                
+                <!-- Content -->
+                <div style="padding: 40px 30px;">
+                  <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Hello <strong>${user.first_name || 'User'}</strong>,</p>
+                  
+                  <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">You have requested to reset your password for your GaleraGo GPS account. Use the code below to complete the reset process:</p>
+                  
+                  <!-- Reset Code Box -->
+                  <div style="background-color: #f1f5f9; border: 2px dashed #3b82f6; padding: 30px; border-radius: 12px; text-align: center; margin: 30px 0;">
+                    <p style="color: #64748b; font-size: 14px; margin: 0 0 10px 0; font-weight: 600;">YOUR RESET CODE</p>
+                    <div style="font-size: 36px; font-weight: bold; color: #1e3a8a; letter-spacing: 8px; margin: 10px 0; font-family: 'Courier New', monospace;">${resetCode}</div>
+                    <p style="color: #64748b; font-size: 12px; margin: 10px 0 0 0;">Valid for 15 minutes</p>
+                  </div>
+                  
+                  <!-- Instructions -->
+                  <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 30px 0; border-radius: 0 8px 8px 0;">
+                    <h3 style="color: #92400e; margin: 0 0 15px 0; font-size: 16px;">⚠️ Important Instructions:</h3>
+                    <ul style="color: #92400e; margin: 0; padding-left: 20px; line-height: 1.6;">
+                      <li>Enter this code in the password reset form</li>
+                      <li>This code will expire in 15 minutes</li>
+                      <li>Do not share this code with anyone</li>
+                      <li>If you didn't request this reset, please ignore this email</li>
+                    </ul>
+                  </div>
+                  
+                  <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 30px 0 0 0;">If you have any questions or need assistance, please contact our support team.</p>
+                </div>
+                
+                <!-- Footer -->
+                <div style="background-color: #f8fafc; padding: 20px 30px; border-top: 1px solid #e5e7eb;">
+                  <p style="color: #9ca3af; font-size: 12px; margin: 0; text-align: center;">This is an automated message from GaleraGo GPS. Please do not reply to this email.</p>
+                  <p style="color: #9ca3af; font-size: 12px; margin: 5px 0 0 0; text-align: center;">© ${new Date().getFullYear()} GaleraGo GPS. All rights reserved.</p>
+                </div>
               </div>
-              <p><strong>Important:</strong></p>
-              <ul>
-                <li>This code will expire in 15 minutes</li>
-                <li>Do not share this code with anyone</li>
-                <li>If you didn't request this reset, please ignore this email</li>
-              </ul>
-              <p>If you have any questions, please contact our support team.</p>
-              <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
-              <p style="color: #6b7280; font-size: 14px;">This is an automated message from GaleraGo GPS. Please do not reply to this email.</p>
-            </div>
+            </body>
+            </html>
           `,
-          text: `Password Reset Code: ${resetCode}\n\nThis code will expire in 15 minutes. If you didn't request this reset, please ignore this email.`
+          text: `
+GaleraGo GPS - Password Reset Code
+
+Hello ${user.first_name || 'User'},
+
+You have requested to reset your password for your GaleraGo GPS account.
+
+Your Reset Code: ${resetCode}
+
+This code will expire in 15 minutes.
+
+Important:
+- Enter this code in the password reset form
+- Do not share this code with anyone
+- If you didn't request this reset, please ignore this email
+
+If you have any questions, please contact our support team.
+
+This is an automated message from GaleraGo GPS.
+© ${new Date().getFullYear()} GaleraGo GPS. All rights reserved.
+          `
         }
 
         // Send email
@@ -435,6 +492,8 @@ const UserController = {
         console.log("✅ Email sent successfully!")
         console.log(`  - Message ID: ${emailResult.messageId}`)
         console.log(`  - Response: ${emailResult.response}`)
+        console.log(`  - Accepted: ${emailResult.accepted}`)
+        console.log(`  - Rejected: ${emailResult.rejected}`)
         emailSent = true
       } catch (emailErr) {
         console.error("❌ Email sending failed:")
@@ -442,19 +501,52 @@ const UserController = {
         console.error(`  - Code: ${emailErr.code}`)
         console.error(`  - Command: ${emailErr.command}`)
         console.error(`  - Response: ${emailErr.response}`)
+        console.error(`  - Stack: ${emailErr.stack}`)
         emailError = emailErr.message
         emailSent = false
+        
+        // Try alternative email configuration if first attempt fails
+        if (emailErr.code === 'EAUTH' || emailErr.code === 'ECONNECTION') {
+          console.log("🔄 Trying alternative email configuration...")
+          try {
+            const altTransporter = nodemailer.createTransport({
+              service: "gmail",
+              host: "smtp.gmail.com",
+              port: 465,
+              secure: true,
+              auth: {
+                user: emailUser,
+                pass: emailPass,
+              },
+              tls: {
+                rejectUnauthorized: false
+              }
+            })
+            
+            await altTransporter.verify()
+            console.log("✅ Alternative transporter verified")
+            
+            const altResult = await altTransporter.sendMail(mailOptions)
+            console.log("✅ Email sent via alternative method!")
+            console.log(`  - Message ID: ${altResult.messageId}`)
+            emailSent = true
+            emailError = null
+          } catch (altErr) {
+            console.error("❌ Alternative email method also failed:", altErr.message)
+          }
+        }
       }
 
-      // Always return success with the reset code info
+      // Return response based on email sending status
       res.json({ 
         message: emailSent 
-          ? "Reset code sent to your email. Please check your inbox and spam folder."
-          : `Reset code generated successfully! Check the server console for the code: ${resetCode}`,
+          ? "✅ Reset code sent to your email successfully! Please check your inbox and spam folder."
+          : `⚠️ Reset code generated but email sending failed. Please contact support or check server console for the code: ${resetCode}`,
         success: true,
         debug_code: resetCode, // Always include for testing
         email_sent: emailSent,
-        email_error: emailError
+        email_error: emailError,
+        reset_code: resetCode // Include reset code in response
       })
     } catch (error) {
       console.error("❌ Error in forgotPassword:", error)
@@ -708,4 +800,3 @@ const UserController = {
 // ✅ Correct module.exports
 module.exports = UserController
 module.exports.upload = upload
-
