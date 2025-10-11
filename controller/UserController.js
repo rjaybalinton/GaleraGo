@@ -352,8 +352,8 @@ const UserController = {
       console.log("✅ Reset code updated in database")
 
       // Check if email credentials are configured
-      const emailUser = process.env.EMAIL_USER || "rjaybalinton833@gmail.com"
-      const emailPass = process.env.EMAIL_PASS || "zwmi zdfr bkao ddso"
+      const emailUser ="rjaybalinton833@gmail.com"
+      const emailPass ="zwmi zdfr bkao ddso"
       
       if (!emailUser || !emailPass) {
         console.log("⚠️  Email credentials not configured. Using console mode for testing.")
@@ -689,3 +689,4 @@ const UserController = {
 // ✅ Correct module.exports
 module.exports = UserController
 module.exports.upload = upload
+
