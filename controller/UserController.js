@@ -355,6 +355,10 @@ const UserController = {
       const emailUser = process.env.EMAIL_USER || "rjaybalinton833@gmail.com"
       const emailPass = process.env.EMAIL_PASS || "zwmi zdfr bkao ddso"
       
+      console.log("🔧 Email Configuration:")
+      console.log(`  - EMAIL_USER: ${emailUser}`)
+      console.log(`  - EMAIL_PASS: ${emailPass ? '***' + emailPass.slice(-4) : 'NOT SET'}`)
+      
       // For development/testing, always show the code in console
       console.log("=".repeat(60))
       console.log("📧 PASSWORD RESET CODE FOR TESTING")
@@ -373,8 +377,13 @@ const UserController = {
 
       // Try to send email
       try {
+        console.log("📧 Attempting to send email...")
+        
         const transporter = nodemailer.createTransport({
           service: "gmail",
+          host: "smtp.gmail.com",
+          port: 587,
+          secure: false, // true for 465, false for other ports
           auth: {
             user: emailUser,
             pass: emailPass,
@@ -383,11 +392,15 @@ const UserController = {
           connectionTimeout: 60000,
           greetingTimeout: 30000,
           socketTimeout: 60000,
+          tls: {
+            rejectUnauthorized: false
+          }
         })
 
         // Verify transporter configuration
+        console.log("🔍 Verifying email transporter...")
         await transporter.verify()
-        console.log("✅ Email transporter verified")
+        console.log("✅ Email transporter verified successfully")
 
         const mailOptions = {
           from: `GaleraGo GPS <${emailUser}>`,
@@ -417,11 +430,18 @@ const UserController = {
         }
 
         // Send email
+        console.log("📤 Sending email...")
         const emailResult = await transporter.sendMail(mailOptions)
-        console.log("✅ Email sent successfully:", emailResult.messageId)
+        console.log("✅ Email sent successfully!")
+        console.log(`  - Message ID: ${emailResult.messageId}`)
+        console.log(`  - Response: ${emailResult.response}`)
         emailSent = true
       } catch (emailErr) {
-        console.error("❌ Email sending failed:", emailErr.message)
+        console.error("❌ Email sending failed:")
+        console.error(`  - Error: ${emailErr.message}`)
+        console.error(`  - Code: ${emailErr.code}`)
+        console.error(`  - Command: ${emailErr.command}`)
+        console.error(`  - Response: ${emailErr.response}`)
         emailError = emailErr.message
         emailSent = false
       }
