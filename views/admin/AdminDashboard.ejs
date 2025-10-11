@@ -626,155 +626,6 @@
         });
         
 
-        // Render charts inside Reports modal
-        async function renderAgeGenderChartsModal() {
-            try {
-                const res = await fetch('/admin/reports/age-gender-data');
-                
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-                }
-                
-                const data = await res.json();
-                
-                // Check if data exists and has the expected structure
-                if (!data || !data.byGender || !data.byAge) {
-                    throw new Error('Invalid data structure received from server');
-                }
-                
-                const { byGender, byAge } = data;
-                
-                // Ensure byGender and byAge are arrays
-                if (!Array.isArray(byGender) || !Array.isArray(byAge)) {
-                    throw new Error('Expected arrays but received different data types');
-                }
-                
-                const monthSet = new Set();
-                byGender.forEach(r => monthSet.add(r.month));
-                byAge.forEach(r => monthSet.add(r.month));
-                const months = Array.from(monthSet);
-                
-                // Handle case where there's no data
-                if (months.length === 0) {
-                    console.log('No data available for age/gender charts');
-                    months.push('No Data');
-                }
-
-                // Calculate gender totals for table
-                const genderTotals = {};
-                byGender.forEach(r => {
-                    genderTotals[r.gender] = (genderTotals[r.gender] || 0) + Number(r.count);
-                });
-                const totalGender = Object.values(genderTotals).reduce((sum, count) => sum + count, 0);
-
-                // Calculate age totals for table
-                const ageTotals = {};
-                byAge.forEach(r => {
-                    ageTotals[r.age_bucket] = (ageTotals[r.age_bucket] || 0) + Number(r.count);
-                });
-                const totalAge = Object.values(ageTotals).reduce((sum, count) => sum + count, 0);
-
-                // Render gender chart
-                const genders = ['Male','Female','Other'];
-                const genderColors = { Male:'#3b82f6', Female:'#ef4444', Other:'#10b981' };
-                const genderDatasets = genders.map(g => ({
-                    label: g,
-                    data: months.map(m => Number((byGender.find(r => r.month===m && r.gender===g)||{}).count||0)),
-                    borderColor: genderColors[g],
-                    backgroundColor: genderColors[g]+'33',
-                    tension: 0.2
-                }));
-                // Destroy previous charts if re-opened
-                if (window.__modalGenderChart) window.__modalGenderChart.destroy();
-                window.__modalGenderChart = new Chart(document.getElementById('modalGenderChart'), {
-                    type:'line', data:{ labels: months, datasets: genderDatasets }, options:{ plugins:{ legend:{ position:'bottom' } } }
-                });
-
-                // Render age chart
-                const ageBuckets = ['0-12','13-17','18-24','25-34','35-44','45-54','55+','Unknown'];
-                const ageColors = ['#f59e0b','#84cc16','#06b6d4','#8b5cf6','#ef4444','#10b981','#3b82f6','#9ca3af'];
-                const ageDatasets = ageBuckets.map((b,i)=>({
-                    label:b,
-                    data: months.map(m => Number((byAge.find(r => r.month===m && r.age_bucket===b)||{}).count||0)),
-                    borderColor: ageColors[i],
-                    backgroundColor: ageColors[i]+'33',
-                    tension: 0.2
-                }));
-                if (window.__modalAgeChart) window.__modalAgeChart.destroy();
-                window.__modalAgeChart = new Chart(document.getElementById('modalAgeChart'), {
-                    type:'line', data:{ labels: months, datasets: ageDatasets }, options:{ plugins:{ legend:{ position:'bottom' } } }
-                });
-
-                // Populate gender table
-                const genderTableBody = document.getElementById('gender-table');
-                genderTableBody.innerHTML = '';
-                
-                if (totalGender === 0) {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `<td class="py-2 px-4 border-b text-gray-500" colspan="3">No gender data available</td>`;
-                    genderTableBody.appendChild(row);
-                } else {
-                    genders.forEach(gender => {
-                        const count = genderTotals[gender] || 0;
-                        const percentage = totalGender > 0 ? ((count / totalGender) * 100).toFixed(1) : '0.0';
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td class="py-2 px-4 border-b">${gender}</td>
-                            <td class="py-2 px-4 border-b">${count}</td>
-                            <td class="py-2 px-4 border-b">${percentage}%</td>
-                        `;
-                        genderTableBody.appendChild(row);
-                    });
-                }
-
-                // Populate age table
-                const ageTableBody = document.getElementById('age-table');
-                ageTableBody.innerHTML = '';
-                
-                if (totalAge === 0) {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `<td class="py-2 px-4 border-b text-gray-500" colspan="3">No age data available</td>`;
-                    ageTableBody.appendChild(row);
-                } else {
-                    ageBuckets.forEach(ageBucket => {
-                        const count = ageTotals[ageBucket] || 0;
-                        const percentage = totalAge > 0 ? ((count / totalAge) * 100).toFixed(1) : '0.0';
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td class="py-2 px-4 border-b">${ageBucket}</td>
-                            <td class="py-2 px-4 border-b">${count}</td>
-                            <td class="py-2 px-4 border-b">${percentage}%</td>
-                        `;
-                        ageTableBody.appendChild(row);
-                    });
-                }
-
-            } catch (e) {
-                console.error('Modal Age/Gender charts load failed:', e);
-                
-                // Show detailed error message
-                const errorMessage = e.message || 'Unknown error occurred';
-                const errorHTML = `<tr><td class="py-2 px-4 border-b text-red-500" colspan="3">Error: ${errorMessage}</td></tr>`;
-                
-                // Show error in tables
-                const genderTable = document.getElementById('gender-table');
-                const ageTable = document.getElementById('age-table');
-                
-                if (genderTable) {
-                    genderTable.innerHTML = errorHTML;
-                }
-                if (ageTable) {
-                    ageTable.innerHTML = errorHTML;
-                }
-                
-                // Also show error in console for debugging
-                console.error('Age/Gender data fetch failed. Check if:');
-                console.error('1. User is logged in as admin');
-                console.error('2. Server is running');
-                console.error('3. Database connection is working');
-                console.error('4. Tourists table has data');
-            }
-        }
 
         // Fetch dashboard data
         async function fetchDashboardData() {
@@ -886,9 +737,14 @@
                     console.log('Rendering month report...');
                     renderMonthReport(touristStats.byMonth);
                 }
-                if (ageGenderData.byGender || ageGenderData.byAge) {
-                    console.log('Rendering age/gender charts...');
-                    await renderAgeGenderChartsModal();
+                if (touristStats.byGender) {
+                    console.log('Rendering gender report...');
+                 renderGenderReport(touristStats.byGender);
+                }
+                
+                if (touristStats.byAge) {
+                    console.log('Rendering age report...');
+                    renderAgeReport(touristStats.byAge);
                 }
 
                 // Wait a moment for charts to render
@@ -1345,28 +1201,35 @@
         // Load reports data and create charts
         async function loadReports(reportType) {
             try {
-                if (reportType === 'by-gender' || reportType === 'by-age') {
-                    // Load age and gender data for modal charts
-                    renderAgeGenderChartsModal();
-                    return;
-                }
-                
+                console.log('Loading reports for type:', reportType);
                 const response = await fetch('/admin/tourist-stats');
                 if (!response.ok) {
                     throw new Error('Failed to fetch tourist statistics');
                 }
                 
                 const data = await response.json();
+                console.log('API Response data:', data);
                 
                 switch (reportType) {
                     case 'by-type':
+                        console.log('Rendering type report with data:', data.byType);
                         renderTypeReport(data.byType);
                         break;
                     case 'by-nationality':
+                        console.log('Rendering nationality report with data:', data.byNationality);
                         renderNationalityReport(data.byNationality);
                         break;
                     case 'by-month':
+                        console.log('Rendering month report with data:', data.byMonth);
                         renderMonthReport(data.byMonth);
+                        break;
+                    case 'by-gender':
+                        console.log('Rendering gender report with data:', data.byGender);
+                        renderGenderReport(data.byGender);
+                        break;
+                    case 'by-age':
+                        console.log('Rendering age report with data:', data.byAge);
+                        renderAgeReport(data.byAge);
                         break;
                 }
             }
@@ -1558,6 +1421,130 @@
                     <td class="py-2 px-4 border-b">${item.month}</td>
                     <td class="py-2 px-4 border-b">${item.count}</td>
                     <td class="py-2 px-4 border-b ${change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : ''}">${changeText}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Render gender report
+        function renderGenderReport(data) {
+            if (!data || !data.length) {
+                document.getElementById('gender-table').innerHTML = `<tr><td class="py-2 px-4 border-b" colspan="3">No data available</td></tr>`;
+                return;
+            }
+            
+            // Prepare chart data
+            const labels = data.map(item => item.gender);
+            const counts = data.map(item => item.count);
+            const total = counts.reduce((sum, count) => sum + count, 0);
+            
+            // Create chart
+            const ctx = document.getElementById('modalGenderChart').getContext('2d');
+            if (window.modalGenderChart instanceof Chart) {
+    window.modalGenderChart.destroy();
+}
+            window.modalGenderChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: counts,
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)',  // Blue for Male
+                            'rgba(239, 68, 68, 0.7)',   // Red for Female
+                            'rgba(16, 185, 129, 0.7)',  // Green for Other
+                            'rgba(156, 163, 175, 0.7)'  // Gray for Not Specified
+                        ],
+                        borderColor: [
+                            'rgba(59, 130, 246, 1)',
+                            'rgba(239, 68, 68, 1)',
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(156, 163, 175, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+            
+            // Update table
+            const tableBody = document.getElementById('gender-table');
+            tableBody.innerHTML = '';
+            
+            data.forEach(item => {
+                const percentage = total > 0 ? ((item.count / total) * 100).toFixed(1) : '0.0';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="py-2 px-4 border-b">${item.gender}</td>
+                    <td class="py-2 px-4 border-b">${item.count}</td>
+                    <td class="py-2 px-4 border-b">${percentage}%</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Render age report
+        function renderAgeReport(data) {
+            if (!data || !data.length) {
+                document.getElementById('age-table').innerHTML = `<tr><td class="py-2 px-4 border-b" colspan="3">No data available</td></tr>`;
+                return;
+            }
+            
+            // Prepare chart data
+            const labels = data.map(item => item.age_bucket);
+            const counts = data.map(item => item.count);
+            const total = counts.reduce((sum, count) => sum + count, 0);
+            
+            // Create chart
+            const ctx = document.getElementById('modalAgeChart').getContext('2d');
+            if (window.modalAgeChart instanceof Chart) {
+    window.modalAgeChart.destroy();
+    }
+            window.modalAgeChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Tourist Count',
+                        data: counts,
+                        backgroundColor: 'rgba(139, 92, 246, 0.7)',
+                        borderColor: 'rgba(139, 92, 246, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                precision: 0
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Update table
+            const tableBody = document.getElementById('age-table');
+            tableBody.innerHTML = '';
+            
+            data.forEach(item => {
+                const percentage = total > 0 ? ((item.count / total) * 100).toFixed(1) : '0.0';
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="py-2 px-4 border-b">${item.age_bucket}</td>
+                    <td class="py-2 px-4 border-b">${item.count}</td>
+                    <td class="py-2 px-4 border-b">${percentage}%</td>
                 `;
                 tableBody.appendChild(row);
             });

@@ -137,6 +137,8 @@ const AdminController = {
         byType: [],
         byNationality: [],
         byMonth: [],
+        byGender: [],
+        byAge: [],
       }
 
       // Get stats by type
@@ -187,6 +189,58 @@ const AdminController = {
         stats.byMonth = rows
       } catch (error) {
         console.error("Error getting tourist stats by month:", error)
+      }
+
+      // Get stats by gender
+      try {
+        const [rows] = await db.query(`
+          SELECT 
+            COALESCE(gender, 'Not Specified') as gender,
+            COUNT(*) as count,
+            ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM tourists), 1) as percentage
+          FROM tourists
+          GROUP BY gender
+          ORDER BY count DESC
+        `)
+        stats.byGender = rows
+      } catch (error) {
+        console.error("Error getting tourist stats by gender:", error)
+      }
+
+      // Get stats by age bucket
+      try {
+        const [rows] = await db.query(`
+          SELECT 
+            CASE 
+              WHEN age IS NULL THEN 'Unknown'
+              WHEN age < 13 THEN '0-12'
+              WHEN age BETWEEN 13 AND 17 THEN '13-17'
+              WHEN age BETWEEN 18 AND 24 THEN '18-24'
+              WHEN age BETWEEN 25 AND 34 THEN '25-34'
+              WHEN age BETWEEN 35 AND 44 THEN '35-44'
+              WHEN age BETWEEN 45 AND 54 THEN '45-54'
+              WHEN age >= 55 THEN '55+'
+              ELSE 'Unknown'
+            END AS age_bucket,
+            COUNT(*) as count,
+            ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM tourists), 1) as percentage
+          FROM tourists
+          GROUP BY age_bucket
+          ORDER BY 
+            CASE age_bucket
+              WHEN '0-12' THEN 1
+              WHEN '13-17' THEN 2
+              WHEN '18-24' THEN 3
+              WHEN '25-34' THEN 4
+              WHEN '35-44' THEN 5
+              WHEN '45-54' THEN 6
+              WHEN '55+' THEN 7
+              ELSE 8
+            END
+        `)
+        stats.byAge = rows
+      } catch (error) {
+        console.error("Error getting tourist stats by age:", error)
       }
 
       res.json(stats)
