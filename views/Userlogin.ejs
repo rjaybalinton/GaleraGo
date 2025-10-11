@@ -464,7 +464,14 @@
                 })
                 .then(data => {
                     if (data.success || data.message) {
-                        alert(data.message || "Reset code sent successfully!");
+                        let message = data.message || "Reset code sent successfully!";
+                        
+                        // If email wasn't sent but we have a debug code, show it
+                        if (data.debug_code && !data.email_sent) {
+                            message += `\n\nFor testing purposes, use this code: ${data.debug_code}`;
+                        }
+                        
+                        alert(message);
                         savedEmail = email;
                         stepEmail.classList.add('hidden');
                         stepReset.classList.remove('hidden');

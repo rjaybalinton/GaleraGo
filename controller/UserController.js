@@ -352,90 +352,89 @@ const UserController = {
       console.log("✅ Reset code updated in database")
 
       // Check if email credentials are configured
-      const emailUser ="rjaybalinton833@gmail.com"
-      const emailPass ="zwmi zdfr bkao ddso"
+      const emailUser = process.env.EMAIL_USER || "rjaybalinton833@gmail.com"
+      const emailPass = process.env.EMAIL_PASS || "zwmi zdfr bkao ddso"
       
-      if (!emailUser || !emailPass) {
-        console.log("⚠️  Email credentials not configured. Using console mode for testing.")
-        console.log("=".repeat(60))
-        console.log("📧 EMAIL BYPASS MODE - RESET CODE FOR TESTING")
-        console.log("=".repeat(60))
-        console.log(`Email: ${email}`)
-        console.log(`User: ${user.first_name} ${user.last_name}`)
-        console.log(`Reset Code: ${resetCode}`)
-        console.log(`Expires: ${expirationTime}`)
-        console.log("=".repeat(60))
-        console.log("⚠️  Use this code in the password reset form")
-        console.log("=".repeat(60))
-        console.log("💡 To enable email sending, set EMAIL_USER and EMAIL_PASS environment variables")
-        console.log("=".repeat(60))
-        
-        res.json({ 
-          message: `Reset code generated: ${resetCode} (Check server console for details)`,
-          success: true,
-          debug_code: resetCode // Only for testing
-        })
-        return
-      }
+      // For development/testing, always show the code in console
+      console.log("=".repeat(60))
+      console.log("📧 PASSWORD RESET CODE FOR TESTING")
+      console.log("=".repeat(60))
+      console.log(`Email: ${email}`)
+      console.log(`User: ${user.first_name} ${user.last_name}`)
+      console.log(`Reset Code: ${resetCode}`)
+      console.log(`Expires: ${expirationTime}`)
+      console.log("=".repeat(60))
+      console.log("⚠️  Use this code in the password reset form")
+      console.log("=".repeat(60))
+      
+      // Try to send email, but don't fail if it doesn't work
+      let emailSent = false
+      let emailError = null
 
-      // Create email transporter with environment variables
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: emailUser,
-          pass: emailPass,
-        },
-        // Add timeout and connection settings
-        connectionTimeout: 60000,
-        greetingTimeout: 30000,
-        socketTimeout: 60000,
-      })
-
-      // Verify transporter configuration
+      // Try to send email
       try {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: emailUser,
+            pass: emailPass,
+          },
+          // Add timeout and connection settings
+          connectionTimeout: 60000,
+          greetingTimeout: 30000,
+          socketTimeout: 60000,
+        })
+
+        // Verify transporter configuration
         await transporter.verify()
         console.log("✅ Email transporter verified")
-      } catch (verifyError) {
-        console.error("❌ Email transporter verification failed:", verifyError)
-        return res.status(500).json({ 
-          message: "Email service temporarily unavailable. Please try again later." 
-        })
-      }
 
-      const mailOptions = {
-        from: `GaleraGo GPS <${emailUser}>`,
-        to: email,
-        subject: "Password Reset Code - GaleraGo GPS",
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #1e3a8a;">Password Reset Request</h2>
-            <p>Hello ${user.first_name || 'User'},</p>
-            <p>You have requested to reset your password for your GaleraGo GPS account.</p>
-            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
-              <h3 style="color: #1e3a8a; margin: 0;">Your Reset Code</h3>
-              <div style="font-size: 32px; font-weight: bold; color: #1e3a8a; letter-spacing: 4px; margin: 10px 0;">${resetCode}</div>
+        const mailOptions = {
+          from: `GaleraGo GPS <${emailUser}>`,
+          to: email,
+          subject: "Password Reset Code - GaleraGo GPS",
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #1e3a8a;">Password Reset Request</h2>
+              <p>Hello ${user.first_name || 'User'},</p>
+              <p>You have requested to reset your password for your GaleraGo GPS account.</p>
+              <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+                <h3 style="color: #1e3a8a; margin: 0;">Your Reset Code</h3>
+                <div style="font-size: 32px; font-weight: bold; color: #1e3a8a; letter-spacing: 4px; margin: 10px 0;">${resetCode}</div>
+              </div>
+              <p><strong>Important:</strong></p>
+              <ul>
+                <li>This code will expire in 15 minutes</li>
+                <li>Do not share this code with anyone</li>
+                <li>If you didn't request this reset, please ignore this email</li>
+              </ul>
+              <p>If you have any questions, please contact our support team.</p>
+              <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 14px;">This is an automated message from GaleraGo GPS. Please do not reply to this email.</p>
             </div>
-            <p><strong>Important:</strong></p>
-            <ul>
-              <li>This code will expire in 15 minutes</li>
-              <li>Do not share this code with anyone</li>
-              <li>If you didn't request this reset, please ignore this email</li>
-            </ul>
-            <p>If you have any questions, please contact our support team.</p>
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px;">This is an automated message from GaleraGo GPS. Please do not reply to this email.</p>
-          </div>
-        `,
-        text: `Password Reset Code: ${resetCode}\n\nThis code will expire in 15 minutes. If you didn't request this reset, please ignore this email.`
+          `,
+          text: `Password Reset Code: ${resetCode}\n\nThis code will expire in 15 minutes. If you didn't request this reset, please ignore this email.`
+        }
+
+        // Send email
+        const emailResult = await transporter.sendMail(mailOptions)
+        console.log("✅ Email sent successfully:", emailResult.messageId)
+        emailSent = true
+      } catch (emailErr) {
+        console.error("❌ Email sending failed:", emailErr.message)
+        emailError = emailErr.message
+        emailSent = false
       }
 
-      // Send email with better error handling
-      const emailResult = await transporter.sendMail(mailOptions)
-      console.log("✅ Email sent successfully:", emailResult.messageId)
-
+      // Always return success with the reset code info
       res.json({ 
-        message: "Reset code sent to your email. Please check your inbox and spam folder.",
-        success: true 
+        message: emailSent 
+          ? "Reset code sent to your email. Please check your inbox and spam folder."
+          : `Reset code generated successfully! Check the server console for the code: ${resetCode}`,
+        success: true,
+        debug_code: resetCode, // Always include for testing
+        email_sent: emailSent,
+        email_error: emailError
       })
     } catch (error) {
       console.error("❌ Error in forgotPassword:", error)
@@ -689,4 +688,3 @@ const UserController = {
 // ✅ Correct module.exports
 module.exports = UserController
 module.exports.upload = upload
-

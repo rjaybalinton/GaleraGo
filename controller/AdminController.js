@@ -866,6 +866,65 @@ createAdminAccount: async (req, res) => {
       })
     }
   },
+
+  // Get monthly chart data
+  getMonthlyChartData: async (req, res) => {
+    try {
+      // Check if user is admin
+      if (!req.session.user || req.session.user.user_type !== "admin") {
+        return res.status(403).json({ error: "Unauthorized" })
+      }
+
+      // Check if tourists table exists
+      const [tables] = await db.query(`SHOW TABLES LIKE 'tourists'`)
+
+      if (tables.length === 0) {
+        return res.json({
+          monthlyData: [],
+          totalTourists: 0,
+          message: "No tourist data available"
+        })
+      }
+
+      // Get monthly statistics for the last 12 months
+      const [monthlyData] = await db.query(`
+        SELECT 
+          DATE_FORMAT(created_at, '%Y-%m') as month_year,
+          DATE_FORMAT(created_at, '%b %Y') as month,
+          COUNT(*) as count
+        FROM tourists
+        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+        GROUP BY month_year
+        ORDER BY month_year ASC
+      `)
+
+      // Get total tourists count
+      const [totalResult] = await db.query(`SELECT COUNT(*) as total FROM tourists`)
+      const totalTourists = totalResult[0].total
+
+      // Calculate growth rate for each month
+      const monthlyDataWithGrowth = monthlyData.map((item, index) => {
+        const prevCount = index > 0 ? monthlyData[index - 1].count : 0
+        const growthRate = index === 0 ? 0 : 
+          prevCount > 0 ? ((item.count - prevCount) / prevCount * 100) : 0
+        
+        return {
+          ...item,
+          growthRate: Math.round(growthRate * 100) / 100,
+          change: item.count - prevCount
+        }
+      })
+
+      res.json({
+        monthlyData: monthlyDataWithGrowth,
+        totalTourists,
+        period: "Last 12 months"
+      })
+    } catch (error) {
+      console.error("Get monthly chart data error:", error)
+      res.status(500).json({ error: "Server error", details: error.message })
+    }
+  },
 };
 
 
