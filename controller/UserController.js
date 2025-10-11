@@ -5,6 +5,7 @@ const db = require("../config/db")
 const multer = require("multer")
 const path = require("path")
 const nodemailer = require("nodemailer")
+const gmailService = require("../services/gmailService")
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -376,22 +377,46 @@ const UserController = {
       console.log("⚠️  Use this code in the password reset form")
       console.log("=".repeat(60))
       
-      // Try to send email, but don't fail if it doesn't work
+      // Try to send email using Gmail API first, then SMTP fallback
       let emailSent = false
       let emailError = null
+      let fallbackUsed = false
 
-      // Try to send email
       try {
-        console.log("📧 Attempting to send email...")
+        console.log("📧 Attempting to send email via Gmail API...")
         console.log(`📧 Sending to: ${email}`)
         
-        // Configure transporter based on environment
-        const isRender = process.env.RENDER
-        const isProduction = process.env.NODE_ENV === 'production' || isRender
-        console.log(`🌍 Environment: ${isRender ? 'Render.com' : isProduction ? 'Production' : 'Development'}`)
+        // Try Gmail API first
+        const gmailResult = await gmailService.sendPasswordResetEmail(email, resetCode, user)
         
-        // Use more aggressive settings for Render.com
-        const transporter = nodemailer.createTransport({
+        if (gmailResult.success) {
+          console.log("✅ Email sent successfully via Gmail API!")
+          console.log(`  - Message ID: ${gmailResult.messageId}`)
+          emailSent = true
+        } else {
+          console.log("❌ Gmail API failed, trying SMTP fallback...")
+          console.log(`  - Error: ${gmailResult.error}`)
+          emailError = gmailResult.error
+          fallbackUsed = true
+        }
+      } catch (gmailErr) {
+        console.log("❌ Gmail API error, trying SMTP fallback...")
+        console.log(`  - Error: ${gmailErr.message}`)
+        emailError = gmailErr.message
+        fallbackUsed = true
+      }
+
+      // Fallback to SMTP if Gmail API fails
+      if (!emailSent && fallbackUsed) {
+        try {
+          console.log("🔄 Trying SMTP fallback...")
+          
+          const emailUser = process.env.EMAIL_USER || "rjaybalinton833@gmail.com"
+          const emailPass = process.env.EMAIL_PASS || "zwmi zdfr bkao ddso"
+          const isRender = process.env.RENDER
+          const isProduction = process.env.NODE_ENV === 'production' || isRender
+
+          const transporter = nodemailer.createTransport({
           service: "gmail",
           host: "smtp.gmail.com",
           port: isRender ? 465 : (isProduction ? 465 : 587), // Always use SSL on Render
@@ -439,214 +464,23 @@ const UserController = {
           },
           to: email,
           subject: "🔐 Password Reset Code - GaleraGo GPS",
-          html: `
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Password Reset</title>
-            </head>
-            <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f8fafc;">
-              <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                <!-- Header -->
-                <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 30px; text-align: center;">
-                  <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">GaleraGo GPS</h1>
-                  <p style="color: #e0e7ff; margin: 10px 0 0 0; font-size: 16px;">Password Reset Request</p>
-                </div>
-                
-                <!-- Content -->
-                <div style="padding: 40px 30px;">
-                  <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">Hello <strong>${user.first_name || 'User'}</strong>,</p>
-                  
-                  <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0 0 30px 0;">You have requested to reset your password for your GaleraGo GPS account. Use the code below to complete the reset process:</p>
-                  
-                  <!-- Reset Code Box -->
-                  <div style="background-color: #f1f5f9; border: 2px dashed #3b82f6; padding: 30px; border-radius: 12px; text-align: center; margin: 30px 0;">
-                    <p style="color: #64748b; font-size: 14px; margin: 0 0 10px 0; font-weight: 600;">YOUR RESET CODE</p>
-                    <div style="font-size: 36px; font-weight: bold; color: #1e3a8a; letter-spacing: 8px; margin: 10px 0; font-family: 'Courier New', monospace;">${resetCode}</div>
-                    <p style="color: #64748b; font-size: 12px; margin: 10px 0 0 0;">Valid for 15 minutes</p>
-                  </div>
-                  
-                  <!-- Instructions -->
-                  <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 30px 0; border-radius: 0 8px 8px 0;">
-                    <h3 style="color: #92400e; margin: 0 0 15px 0; font-size: 16px;">⚠️ Important Instructions:</h3>
-                    <ul style="color: #92400e; margin: 0; padding-left: 20px; line-height: 1.6;">
-                      <li>Enter this code in the password reset form</li>
-                      <li>This code will expire in 15 minutes</li>
-                      <li>Do not share this code with anyone</li>
-                      <li>If you didn't request this reset, please ignore this email</li>
-                    </ul>
-                  </div>
-                  
-                  <p style="color: #6b7280; font-size: 14px; line-height: 1.6; margin: 30px 0 0 0;">If you have any questions or need assistance, please contact our support team.</p>
-                </div>
-                
-                <!-- Footer -->
-                <div style="background-color: #f8fafc; padding: 20px 30px; border-top: 1px solid #e5e7eb;">
-                  <p style="color: #9ca3af; font-size: 12px; margin: 0; text-align: center;">This is an automated message from GaleraGo GPS. Please do not reply to this email.</p>
-                  <p style="color: #9ca3af; font-size: 12px; margin: 5px 0 0 0; text-align: center;">© ${new Date().getFullYear()} GaleraGo GPS. All rights reserved.</p>
-                </div>
-              </div>
-            </body>
-            </html>
-          `,
-          text: `
-GaleraGo GPS - Password Reset Code
-
-Hello ${user.first_name || 'User'},
-
-You have requested to reset your password for your GaleraGo GPS account.
-
-Your Reset Code: ${resetCode}
-
-This code will expire in 15 minutes.
-
-Important:
-- Enter this code in the password reset form
-- Do not share this code with anyone
-- If you didn't request this reset, please ignore this email
-
-If you have any questions, please contact our support team.
-
-This is an automated message from GaleraGo GPS.
-© ${new Date().getFullYear()} GaleraGo GPS. All rights reserved.
-          `
+          html: gmailService.createHtmlEmail(resetCode, user),
+          text: gmailService.createTextEmail(resetCode, user)
         }
 
         // Send email
         console.log("📤 Sending email...")
         const emailResult = await transporter.sendMail(mailOptions)
-        console.log("✅ Email sent successfully!")
+        console.log("✅ Email sent successfully via SMTP fallback!")
         console.log(`  - Message ID: ${emailResult.messageId}`)
-        console.log(`  - Response: ${emailResult.response}`)
-        console.log(`  - Accepted: ${emailResult.accepted}`)
-        console.log(`  - Rejected: ${emailResult.rejected}`)
         emailSent = true
-      } catch (emailErr) {
-        console.error("❌ Email sending failed:")
-        console.error(`  - Error: ${emailErr.message}`)
-        console.error(`  - Code: ${emailErr.code}`)
-        console.error(`  - Command: ${emailErr.command}`)
-        console.error(`  - Response: ${emailErr.response}`)
-        console.error(`  - Stack: ${emailErr.stack}`)
-        emailError = emailErr.message
-        emailSent = false
-        
-        // Try alternative email configurations if first attempt fails
-        if (emailErr.code === 'EAUTH' || emailErr.code === 'ECONNECTION' || emailErr.code === 'ETIMEDOUT') {
-          console.log("🔄 Trying alternative email configurations...")
-          
-          // Try different configurations optimized for cloud hosting
-          const altConfigs = [
-            {
-              name: "Gmail SSL (Port 465) - Cloud Optimized",
-              config: {
-                service: "gmail",
-                host: "smtp.gmail.com",
-                port: 465,
-                secure: true,
-                auth: { user: emailUser, pass: emailPass },
-                tls: { 
-                  rejectUnauthorized: false,
-                  ciphers: 'TLSv1.2',
-                  minVersion: 'TLSv1.2'
-                },
-                connectionTimeout: 15000,
-                greetingTimeout: 8000,
-                socketTimeout: 15000,
-                pool: false,
-                maxConnections: 1
-              }
-            },
-            {
-              name: "Gmail TLS (Port 587) - Cloud Optimized",
-              config: {
-                service: "gmail",
-                host: "smtp.gmail.com",
-                port: 587,
-                secure: false,
-                auth: { user: emailUser, pass: emailPass },
-                tls: { 
-                  rejectUnauthorized: false,
-                  ciphers: 'TLSv1.2',
-                  minVersion: 'TLSv1.2'
-                },
-                connectionTimeout: 15000,
-                greetingTimeout: 8000,
-                socketTimeout: 15000,
-                pool: false,
-                maxConnections: 1
-              }
-            },
-            {
-              name: "Gmail with Minimal Settings",
-              config: {
-                service: "gmail",
-                host: "smtp.gmail.com",
-                port: 465,
-                secure: true,
-                auth: { user: emailUser, pass: emailPass },
-                tls: { rejectUnauthorized: false },
-                connectionTimeout: 10000,
-                greetingTimeout: 5000,
-                socketTimeout: 10000
-              }
-            }
-          ]
-          
-          for (const altConfig of altConfigs) {
-            try {
-              console.log(`🔄 Trying ${altConfig.name}...`)
-              const altTransporter = nodemailer.createTransport(altConfig.config)
-              
-              await altTransporter.verify()
-              console.log(`✅ ${altConfig.name} verified successfully`)
-              
-              const altResult = await altTransporter.sendMail(mailOptions)
-              console.log(`✅ Email sent via ${altConfig.name}!`)
-              console.log(`  - Message ID: ${altResult.messageId}`)
-              emailSent = true
-              emailError = null
-              break // Exit loop on success
-              
-            } catch (altErr) {
-              console.log(`❌ ${altConfig.name} failed: ${altErr.message}`)
-              continue // Try next configuration
-            }
-          }
-          
-          if (!emailSent) {
-            console.error("❌ All alternative email methods failed")
-            
-            // For Render.com, try one more approach with minimal configuration
-            if (isRender) {
-              console.log("🔄 Trying Render.com specific fallback...")
-              try {
-                const renderTransporter = nodemailer.createTransport({
-                  service: "gmail",
-                  host: "smtp.gmail.com",
-                  port: 465,
-                  secure: true,
-                  auth: { user: emailUser, pass: emailPass },
-                  tls: { rejectUnauthorized: false },
-                  connectionTimeout: 5000,
-                  greetingTimeout: 3000,
-                  socketTimeout: 5000
-                })
-                
-                const renderResult = await renderTransporter.sendMail(mailOptions)
-                console.log("✅ Email sent via Render.com fallback!")
-                console.log(`  - Message ID: ${renderResult.messageId}`)
-                emailSent = true
-                emailError = null
-              } catch (renderErr) {
-                console.error("❌ Render.com fallback also failed:", renderErr.message)
-              }
-            }
-          }
-        }
+        emailError = null
+      } catch (smtpErr) {
+        console.error("❌ SMTP fallback also failed:")
+        console.error(`  - Error: ${smtpErr.message}`)
+        emailError = smtpErr.message
       }
+    }
 
       // Return response based on email sending status
       let responseMessage = ""
@@ -654,9 +488,6 @@ This is an automated message from GaleraGo GPS.
         responseMessage = "✅ Reset code sent to your email successfully! Please check your inbox and spam folder."
       } else {
         responseMessage = `⚠️ Reset code generated but email sending failed: ${emailError}`
-        if (isRender) {
-          responseMessage += "\n\n⚠️ Note: This is running on Render.com. Email delivery may be delayed or blocked by network policies."
-        }
         responseMessage += `\n\nFor testing purposes, use this code: ${resetCode}`
       }
       
@@ -667,7 +498,7 @@ This is an automated message from GaleraGo GPS.
         email_sent: emailSent,
         email_error: emailError,
         reset_code: resetCode, // Include reset code in response
-        environment: isRender ? 'render' : isProduction ? 'production' : 'development'
+        method_used: emailSent ? (fallbackUsed ? 'SMTP_FALLBACK' : 'GMAIL_API') : 'NONE'
       })
     } catch (error) {
       console.error("❌ Error in forgotPassword:", error)
