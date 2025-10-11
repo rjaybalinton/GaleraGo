@@ -333,7 +333,7 @@ const UserController = {
         service: "gmail",
         auth: {
           user: "rjaybalinton833@gmail.com",
-          pass: "eaal kwcp xvpo kxcr",
+          pass: "zwmi zdfr bkao ddso",
         },
       })
 
@@ -515,3 +515,4 @@ const UserController = {
 // ✅ Correct module.exports
 module.exports = UserController
 module.exports.upload = upload
+
