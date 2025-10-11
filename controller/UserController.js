@@ -353,7 +353,7 @@ const UserController = {
 
       // Check if email credentials are configured
       const emailUser = process.env.EMAIL_USER || "rjaybalinton833@gmail.com"
-      const emailPass = process.env.EMAIL_PASS || "zwmi zdfr bkao ddso"
+      const emailPass = process.env.EMAIL_PASS || "pras wcbc wxti bzyh"
       
       console.log("🔧 Email Configuration:")
       console.log(`  - EMAIL_USER: ${emailUser}`)
@@ -708,3 +708,4 @@ const UserController = {
 // ✅ Correct module.exports
 module.exports = UserController
 module.exports.upload = upload
+
