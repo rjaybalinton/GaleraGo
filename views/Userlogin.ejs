@@ -435,27 +435,51 @@
             // Send Code
             sendCodeBtn.addEventListener('click', () => {
                 const email = emailInput.value.trim();
-                if (!email) return alert("Enter your email");
+                if (!email) {
+                    alert("Please enter your email address");
+                    return;
+                }
+
+                // Validate email format
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    alert("Please enter a valid email address");
+                    return;
+                }
+
+                // Disable button to prevent multiple requests
+                sendCodeBtn.disabled = true;
+                sendCodeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sending...';
         
                 fetch('/forgot-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                    }
+                    return res.json();
+                })
                 .then(data => {
-                    if (data.message) {
-                        alert(data.message);
+                    if (data.success || data.message) {
+                        alert(data.message || "Reset code sent successfully!");
                         savedEmail = email;
                         stepEmail.classList.add('hidden');
                         stepReset.classList.remove('hidden');
                     } else {
-                        alert("Unexpected error.");
+                        alert(data.message || "Failed to send reset code. Please try again.");
                     }
                 })
                 .catch(err => {
-                    console.error(err);
-                    alert("Server error");
+                    console.error('Send code error:', err);
+                    alert("Failed to send reset code. Please check your internet connection and try again.");
+                })
+                .finally(() => {
+                    // Re-enable button
+                    sendCodeBtn.disabled = false;
+                    sendCodeBtn.innerHTML = 'Send Code';
                 });
             });
         
@@ -464,30 +488,77 @@
                 const code = codeInput.value.trim();
                 const newPassword = newPasswordInput.value.trim();
         
-                if (!code || !newPassword) return alert("Fill in all fields");
+                if (!code || !newPassword) {
+                    alert("Please fill in all fields");
+                    return;
+                }
+
+                // Validate code format
+                if (!/^\d{6}$/.test(code)) {
+                    alert("Please enter a valid 6-digit code");
+                    return;
+                }
+
+                // Validate password strength
+                if (newPassword.length < 6) {
+                    alert("Password must be at least 6 characters long");
+                    return;
+                }
+
+                // Disable button to prevent multiple requests
+                resetBtn.disabled = true;
+                resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Verifying...';
         
                 fetch('/verify-code', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: savedEmail, code })
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     if (data.message === "Code verified successfully.") {
+                        // Update button text
+                        resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Resetting Password...';
+                        
                         // Now send reset password request
-                        fetch('/reset-password', {
+                        return fetch('/reset-password', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ email: savedEmail, newPassword })
-                        })
-                        .then(res => res.json())
-                        .then(data => {
-                            alert(data.message);
-                            modal.classList.add('hidden');
                         });
                     } else {
-                        alert(data.message || "Verification failed");
+                        throw new Error(data.message || "Code verification failed");
                     }
+                })
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    alert(data.message || "Password reset successfully!");
+                    modal.classList.add('hidden');
+                    // Reset form
+                    emailInput.value = '';
+                    codeInput.value = '';
+                    newPasswordInput.value = '';
+                    stepEmail.classList.remove('hidden');
+                    stepReset.classList.add('hidden');
+                })
+                .catch(err => {
+                    console.error('Reset password error:', err);
+                    alert(err.message || "Failed to reset password. Please try again.");
+                })
+                .finally(() => {
+                    // Re-enable button
+                    resetBtn.disabled = false;
+                    resetBtn.innerHTML = 'Reset Password';
                 });
             });
         });

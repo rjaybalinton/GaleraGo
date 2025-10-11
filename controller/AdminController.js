@@ -768,19 +768,32 @@ createAdminAccount: async (req, res) => {
   },
   getAgeGenderReport: async (req, res) => {
     try {
+      console.log('Age-gender report request received');
+      
       if (!req.session.user || req.session.user.user_type !== "admin") {
+        console.log('Unauthorized access attempt to age-gender report');
         return res.status(403).json({ error: "Unauthorized" })
       }
 
+      console.log('Fetching age-gender data...');
       const [byGender, byAge] = await Promise.all([
         ReportModel.getMonthlyGender(),
         ReportModel.getMonthlyAgeBuckets(),
       ])
 
+      console.log('Age-gender data fetched:', { 
+        genderCount: byGender?.length || 0, 
+        ageCount: byAge?.length || 0 
+      });
+
       res.json({ byGender, byAge })
     } catch (error) {
       console.error('Get age-gender report error:', error)
-      res.status(500).json({ error: 'Server error', details: error.message })
+      res.status(500).json({ 
+        error: 'Server error', 
+        details: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      })
     }
   },
 };

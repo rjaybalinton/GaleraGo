@@ -630,11 +630,35 @@
         async function renderAgeGenderChartsModal() {
             try {
                 const res = await fetch('/admin/reports/age-gender-data');
-                const { byGender, byAge } = await res.json();
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
+                
+                const data = await res.json();
+                
+                // Check if data exists and has the expected structure
+                if (!data || !data.byGender || !data.byAge) {
+                    throw new Error('Invalid data structure received from server');
+                }
+                
+                const { byGender, byAge } = data;
+                
+                // Ensure byGender and byAge are arrays
+                if (!Array.isArray(byGender) || !Array.isArray(byAge)) {
+                    throw new Error('Expected arrays but received different data types');
+                }
+                
                 const monthSet = new Set();
                 byGender.forEach(r => monthSet.add(r.month));
                 byAge.forEach(r => monthSet.add(r.month));
                 const months = Array.from(monthSet);
+                
+                // Handle case where there's no data
+                if (months.length === 0) {
+                    console.log('No data available for age/gender charts');
+                    months.push('No Data');
+                }
 
                 // Calculate gender totals for table
                 const genderTotals = {};
@@ -684,38 +708,71 @@
                 // Populate gender table
                 const genderTableBody = document.getElementById('gender-table');
                 genderTableBody.innerHTML = '';
-                genders.forEach(gender => {
-                    const count = genderTotals[gender] || 0;
-                    const percentage = totalGender > 0 ? ((count / totalGender) * 100).toFixed(1) : '0.0';
+                
+                if (totalGender === 0) {
                     const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="py-2 px-4 border-b">${gender}</td>
-                        <td class="py-2 px-4 border-b">${count}</td>
-                        <td class="py-2 px-4 border-b">${percentage}%</td>
-                    `;
+                    row.innerHTML = `<td class="py-2 px-4 border-b text-gray-500" colspan="3">No gender data available</td>`;
                     genderTableBody.appendChild(row);
-                });
+                } else {
+                    genders.forEach(gender => {
+                        const count = genderTotals[gender] || 0;
+                        const percentage = totalGender > 0 ? ((count / totalGender) * 100).toFixed(1) : '0.0';
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="py-2 px-4 border-b">${gender}</td>
+                            <td class="py-2 px-4 border-b">${count}</td>
+                            <td class="py-2 px-4 border-b">${percentage}%</td>
+                        `;
+                        genderTableBody.appendChild(row);
+                    });
+                }
 
                 // Populate age table
                 const ageTableBody = document.getElementById('age-table');
                 ageTableBody.innerHTML = '';
-                ageBuckets.forEach(ageBucket => {
-                    const count = ageTotals[ageBucket] || 0;
-                    const percentage = totalAge > 0 ? ((count / totalAge) * 100).toFixed(1) : '0.0';
+                
+                if (totalAge === 0) {
                     const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td class="py-2 px-4 border-b">${ageBucket}</td>
-                        <td class="py-2 px-4 border-b">${count}</td>
-                        <td class="py-2 px-4 border-b">${percentage}%</td>
-                    `;
+                    row.innerHTML = `<td class="py-2 px-4 border-b text-gray-500" colspan="3">No age data available</td>`;
                     ageTableBody.appendChild(row);
-                });
+                } else {
+                    ageBuckets.forEach(ageBucket => {
+                        const count = ageTotals[ageBucket] || 0;
+                        const percentage = totalAge > 0 ? ((count / totalAge) * 100).toFixed(1) : '0.0';
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td class="py-2 px-4 border-b">${ageBucket}</td>
+                            <td class="py-2 px-4 border-b">${count}</td>
+                            <td class="py-2 px-4 border-b">${percentage}%</td>
+                        `;
+                        ageTableBody.appendChild(row);
+                    });
+                }
 
             } catch (e) {
-                console.warn('Modal Age/Gender charts load failed', e);
+                console.error('Modal Age/Gender charts load failed:', e);
+                
+                // Show detailed error message
+                const errorMessage = e.message || 'Unknown error occurred';
+                const errorHTML = `<tr><td class="py-2 px-4 border-b text-red-500" colspan="3">Error: ${errorMessage}</td></tr>`;
+                
                 // Show error in tables
-                document.getElementById('gender-table').innerHTML = `<tr><td class="py-2 px-4 border-b text-red-500" colspan="3">Error loading data</td></tr>`;
-                document.getElementById('age-table').innerHTML = `<tr><td class="py-2 px-4 border-b text-red-500" colspan="3">Error loading data</td></tr>`;
+                const genderTable = document.getElementById('gender-table');
+                const ageTable = document.getElementById('age-table');
+                
+                if (genderTable) {
+                    genderTable.innerHTML = errorHTML;
+                }
+                if (ageTable) {
+                    ageTable.innerHTML = errorHTML;
+                }
+                
+                // Also show error in console for debugging
+                console.error('Age/Gender data fetch failed. Check if:');
+                console.error('1. User is logged in as admin');
+                console.error('2. Server is running');
+                console.error('3. Database connection is working');
+                console.error('4. Tourists table has data');
             }
         }
 

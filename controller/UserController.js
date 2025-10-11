@@ -300,9 +300,18 @@ const UserController = {
     const { email } = req.body
 
     try {
+      console.log("🔹 Password reset requested for email:", email)
+      
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" })
+      }
+
       const [users] = await db.query("SELECT * FROM users WHERE email = ?", [email])
 
       if (!users || users.length === 0) {
+        console.log("❌ Email not found:", email)
         return res.status(404).json({ message: "Email not found" })
       }
 
@@ -315,41 +324,141 @@ const UserController = {
         Number.parseInt(user.is_suspended) === 1
 
       if (isSuspended) {
+        console.log("❌ Account suspended for email:", email)
         return res.status(403).json({
           message: "Account is suspended. Please contact support for assistance.",
         })
       }
 
+      // Generate 6-digit reset code
       const resetCode = Math.floor(100000 + Math.random() * 900000).toString()
       const expirationTime = new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
+      
+      console.log("🔹 Generated reset code:", resetCode)
+      console.log("🔹 Expiration time:", expirationTime)
 
-      await db.query("UPDATE users SET reset_code = ?, reset_expiry = ? WHERE email = ?", [
+      // Update database with reset code and expiry
+      const [updateResult] = await db.query("UPDATE users SET reset_code = ?, reset_expiry = ? WHERE email = ?", [
         resetCode,
         expirationTime,
         email,
       ])
 
+      if (updateResult.affectedRows === 0) {
+        console.log("❌ Failed to update reset code in database")
+        return res.status(500).json({ message: "Failed to generate reset code" })
+      }
+
+      console.log("✅ Reset code updated in database")
+
+      // Check if email credentials are configured
+      const emailUser = process.env.EMAIL_USER || "rjaybalinton833@gmail.com"
+      const emailPass = process.env.EMAIL_PASS || "zwmi zdfr bkao ddso"
+      
+      if (!emailUser || !emailPass) {
+        console.log("⚠️  Email credentials not configured. Using console mode for testing.")
+        console.log("=".repeat(60))
+        console.log("📧 EMAIL BYPASS MODE - RESET CODE FOR TESTING")
+        console.log("=".repeat(60))
+        console.log(`Email: ${email}`)
+        console.log(`User: ${user.first_name} ${user.last_name}`)
+        console.log(`Reset Code: ${resetCode}`)
+        console.log(`Expires: ${expirationTime}`)
+        console.log("=".repeat(60))
+        console.log("⚠️  Use this code in the password reset form")
+        console.log("=".repeat(60))
+        console.log("💡 To enable email sending, set EMAIL_USER and EMAIL_PASS environment variables")
+        console.log("=".repeat(60))
+        
+        res.json({ 
+          message: `Reset code generated: ${resetCode} (Check server console for details)`,
+          success: true,
+          debug_code: resetCode // Only for testing
+        })
+        return
+      }
+
+      // Create email transporter with environment variables
       const transporter = nodemailer.createTransport({
         service: "gmail",
         auth: {
-          user: "rjaybalinton833@gmail.com",
-          pass: "zwmi zdfr bkao ddso",
+          user: emailUser,
+          pass: emailPass,
         },
+        // Add timeout and connection settings
+        connectionTimeout: 60000,
+        greetingTimeout: 30000,
+        socketTimeout: 60000,
       })
 
-      const mailOptions = {
-        from: "rjaybalinton833@gmail.com",
-        to: email,
-        subject: "Password Reset Code",
-        text: `Your reset code is: ${resetCode}`,
+      // Verify transporter configuration
+      try {
+        await transporter.verify()
+        console.log("✅ Email transporter verified")
+      } catch (verifyError) {
+        console.error("❌ Email transporter verification failed:", verifyError)
+        return res.status(500).json({ 
+          message: "Email service temporarily unavailable. Please try again later." 
+        })
       }
 
-      await transporter.sendMail(mailOptions)
+      const mailOptions = {
+        from: `GaleraGo GPS <${emailUser}>`,
+        to: email,
+        subject: "Password Reset Code - GaleraGo GPS",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #1e3a8a;">Password Reset Request</h2>
+            <p>Hello ${user.first_name || 'User'},</p>
+            <p>You have requested to reset your password for your GaleraGo GPS account.</p>
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+              <h3 style="color: #1e3a8a; margin: 0;">Your Reset Code</h3>
+              <div style="font-size: 32px; font-weight: bold; color: #1e3a8a; letter-spacing: 4px; margin: 10px 0;">${resetCode}</div>
+            </div>
+            <p><strong>Important:</strong></p>
+            <ul>
+              <li>This code will expire in 15 minutes</li>
+              <li>Do not share this code with anyone</li>
+              <li>If you didn't request this reset, please ignore this email</li>
+            </ul>
+            <p>If you have any questions, please contact our support team.</p>
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">This is an automated message from GaleraGo GPS. Please do not reply to this email.</p>
+          </div>
+        `,
+        text: `Password Reset Code: ${resetCode}\n\nThis code will expire in 15 minutes. If you didn't request this reset, please ignore this email.`
+      }
 
-      res.json({ message: "Reset code sent to your email." })
+      // Send email with better error handling
+      const emailResult = await transporter.sendMail(mailOptions)
+      console.log("✅ Email sent successfully:", emailResult.messageId)
+
+      res.json({ 
+        message: "Reset code sent to your email. Please check your inbox and spam folder.",
+        success: true 
+      })
     } catch (error) {
-      console.error("❌ Error sending reset code:", error)
-      res.status(500).json({ message: "Internal server error." })
+      console.error("❌ Error in forgotPassword:", error)
+      
+      // Provide more specific error messages
+      if (error.code === 'EAUTH') {
+        return res.status(500).json({ 
+          message: "Email authentication failed. Please contact support." 
+        })
+      } else if (error.code === 'ECONNECTION') {
+        return res.status(500).json({ 
+          message: "Email service connection failed. Please try again later." 
+        })
+      } else if (error.code === 'ETIMEDOUT') {
+        return res.status(500).json({ 
+          message: "Email service timeout. Please try again later." 
+        })
+      }
+      
+      res.status(500).json({ 
+        message: "Internal server error. Please try again later.",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      })
     }
   },
 
@@ -357,15 +466,32 @@ const UserController = {
     const { email, code } = req.body
 
     try {
-      const [results] = await db.query("SELECT reset_code, reset_expiry, is_suspended FROM users WHERE email = ?", [
+      console.log("🔹 Verifying reset code for email:", email)
+      console.log("🔹 Code provided:", code)
+
+      // Validate input
+      if (!email || !code) {
+        return res.status(400).json({ message: "Email and code are required." })
+      }
+
+      // Validate code format (6 digits)
+      if (!/^\d{6}$/.test(code)) {
+        return res.status(400).json({ message: "Reset code must be 6 digits." })
+      }
+
+      const [results] = await db.query("SELECT reset_code, reset_expiry, is_suspended, first_name FROM users WHERE email = ?", [
         email,
       ])
 
       if (!results || results.length === 0) {
+        console.log("❌ User not found for email:", email)
         return res.status(404).json({ message: "User not found." })
       }
 
       const user = results[0]
+      console.log("🔹 User found:", user.first_name)
+      console.log("🔹 Stored reset code:", user.reset_code)
+      console.log("🔹 Reset expiry:", user.reset_expiry)
 
       // Check if user is suspended
       const isSuspended =
@@ -375,24 +501,40 @@ const UserController = {
         Number.parseInt(user.is_suspended) === 1
 
       if (isSuspended) {
+        console.log("❌ Account suspended for email:", email)
         return res.status(403).json({
           message: "Account is suspended. Please contact support for assistance.",
         })
       }
 
+      // Check if reset code exists
+      if (!user.reset_code) {
+        console.log("❌ No reset code found for user")
+        return res.status(400).json({ message: "No reset code found. Please request a new one." })
+      }
+
       // Check code
       if (user.reset_code !== code) {
+        console.log("❌ Invalid reset code provided")
         return res.status(400).json({ message: "Invalid reset code." })
       }
 
       // Check expiry
-      if (new Date(user.reset_expiry) < new Date()) {
-        return res.status(400).json({ message: "Reset code has expired." })
+      const now = new Date()
+      const expiryDate = new Date(user.reset_expiry)
+      console.log("🔹 Current time:", now)
+      console.log("🔹 Expiry time:", expiryDate)
+      console.log("🔹 Is expired:", now > expiryDate)
+
+      if (now > expiryDate) {
+        console.log("❌ Reset code has expired")
+        return res.status(400).json({ message: "Reset code has expired. Please request a new one." })
       }
 
+      console.log("✅ Reset code verified successfully")
       res.json({ message: "Code verified successfully." })
     } catch (err) {
-      console.error("Error verifying code:", err)
+      console.error("❌ Error verifying code:", err)
       res.status(500).json({ message: "Server error." })
     }
   },
@@ -401,36 +543,68 @@ const UserController = {
     const { email, newPassword } = req.body
 
     try {
-      // Check if user is suspended before allowing password reset
-      const [users] = await db.query("SELECT is_suspended FROM users WHERE email = ?", [email])
+      console.log("🔹 Resetting password for email:", email)
+
+      // Validate input
+      if (!email || !newPassword) {
+        return res.status(400).json({ message: "Email and new password are required." })
+      }
+
+      // Validate password strength
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters long." })
+      }
+
+      // Check if user exists and is not suspended
+      const [users] = await db.query("SELECT is_suspended, first_name FROM users WHERE email = ?", [email])
 
       if (!users || users.length === 0) {
+        console.log("❌ User not found for email:", email)
         return res.status(404).json({ message: "User not found." })
       }
 
+      const user = users[0]
+      console.log("🔹 User found:", user.first_name)
+
       const isSuspended =
-        users[0].is_suspended === 1 ||
-        users[0].is_suspended === "1" ||
-        users[0].is_suspended === true ||
-        Number.parseInt(users[0].is_suspended) === 1
+        user.is_suspended === 1 ||
+        user.is_suspended === "1" ||
+        user.is_suspended === true ||
+        Number.parseInt(user.is_suspended) === 1
 
       if (isSuspended) {
+        console.log("❌ Account suspended for email:", email)
         return res.status(403).json({
           message: "Account is suspended. Please contact support for assistance.",
         })
       }
 
+      // Hash the new password
       const hashedPassword = await bcrypt.hash(newPassword, 10)
+      console.log("🔹 Password hashed successfully")
 
-      await db.query("UPDATE users SET password = ?, reset_code = NULL, reset_expiry = NULL WHERE email = ?", [
+      // Update password and clear reset fields
+      const [updateResult] = await db.query("UPDATE users SET password = ?, reset_code = NULL, reset_expiry = NULL WHERE email = ?", [
         hashedPassword,
         email,
       ])
 
-      res.json({ message: "Password successfully reset!" })
+      if (updateResult.affectedRows === 0) {
+        console.log("❌ Failed to update password in database")
+        return res.status(500).json({ message: "Failed to reset password. Please try again." })
+      }
+
+      console.log("✅ Password reset successfully for:", email)
+      res.json({ 
+        message: "Password successfully reset! You can now login with your new password.",
+        success: true 
+      })
     } catch (error) {
-      console.error("Reset error:", error)
-      res.status(500).json({ message: "Server error!" })
+      console.error("❌ Reset password error:", error)
+      res.status(500).json({ 
+        message: "Server error. Please try again later.",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      })
     }
   },
 
@@ -515,4 +689,3 @@ const UserController = {
 // ✅ Correct module.exports
 module.exports = UserController
 module.exports.upload = upload
-
