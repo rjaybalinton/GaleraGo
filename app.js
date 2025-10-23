@@ -11,7 +11,6 @@ const bookingsRouter = require("./routes/bookings")
 const providerRoutes = require("./routes/providerRoutes")
 const reviewRoutes = require("./routes/reviewRoutes") // Add this line
 const ensureLoggedIn = require('./middleware/sessionAuth');
-const { router: gmailRoutes } = require('./middleware/gmailAuth');
 const app = express()
 const cors = require("cors")
 
@@ -25,15 +24,15 @@ app.set("view engine", "ejs")
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 
-// Sessions - Updated for production
+// Sessions
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "your-very-secure-secret-key-change-this",
+    secret: "secret-key",
     resave: false,
-    saveUninitialized: false, // Changed to false for security
+    saveUninitialized: true,
     cookie: { 
-      secure: process.env.NODE_ENV === 'production', // true in production
-      maxAge: 24 * 60 * 60 * 1000
+      secure: false,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
     },
   }),
 )
@@ -50,7 +49,6 @@ app.use("/", routes)
 app.use("/admin", adminRoutes)
 app.use("/provider", providerRoutes)
 app.use("/", touristRoutes)
-app.use("/", gmailRoutes) // Gmail OAuth2 routes
 app.use('/admin', ensureLoggedIn);
 
 // Start Server
@@ -65,7 +63,3 @@ app.listen(PORT, () => {
   console.log("- Provider routes: /provider/*")
   console.log("- Tourist routes: /")
 })
-
-
-
-
