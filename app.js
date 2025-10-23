@@ -33,9 +33,7 @@ app.use(
     saveUninitialized: false, // Changed to false for security
     cookie: { 
       secure: process.env.NODE_ENV === 'production', // true in production
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      httpOnly: true, // Added for security
-      sameSite: 'lax' // Added for security
+      maxAge: 24 * 60 * 60 * 1000
     },
   }),
 )
@@ -67,6 +65,7 @@ app.listen(PORT, () => {
   console.log("- Provider routes: /provider/*")
   console.log("- Tourist routes: /")
 })
+
 
 
 
