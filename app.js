@@ -1,6 +1,3 @@
-// Load environment variables
-require('dotenv').config();
-
 const express = require("express")
 const session = require("express-session")
 const path = require("path")
@@ -70,5 +67,6 @@ app.listen(PORT, () => {
   console.log("- Provider routes: /provider/*")
   console.log("- Tourist routes: /")
 })
+
 
 
