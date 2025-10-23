@@ -870,59 +870,77 @@ createAdminAccount: async (req, res) => {
   // Get monthly chart data
   getMonthlyChartData: async (req, res) => {
     try {
-      // Check if user is admin
+      // ✅ Step 1: Admin access check
       if (!req.session.user || req.session.user.user_type !== "admin") {
-        return res.status(403).json({ error: "Unauthorized" })
+        return res.status(403).json({ error: "Unauthorized access - Admin only" });
       }
-
-      // Check if tourists table exists
-      const [tables] = await db.query(`SHOW TABLES LIKE 'tourists'`)
-
+  
+      // ✅ Step 2: Check if table exists
+      const [tables] = await db.query("SHOW TABLES LIKE 'tourists'");
       if (tables.length === 0) {
         return res.json({
+          success: true,
+          message: "No tourist data table found",
           monthlyData: [],
           totalTourists: 0,
-          message: "No tourist data available"
-        })
+        });
       }
-
-      // Get monthly statistics for the last 12 months
+  
+      // ✅ Step 3: Fetch monthly stats (last 12 months)
       const [monthlyData] = await db.query(`
         SELECT 
-          DATE_FORMAT(created_at, '%Y-%m') as month_year,
-          DATE_FORMAT(created_at, '%b %Y') as month,
-          COUNT(*) as count
+          DATE_FORMAT(created_at, '%Y-%m') AS month_year,
+          DATE_FORMAT(created_at, '%b %Y') AS month_label,
+          COUNT(*) AS count
         FROM tourists
-        WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
         GROUP BY month_year
         ORDER BY month_year ASC
-      `)
-
-      // Get total tourists count
-      const [totalResult] = await db.query(`SELECT COUNT(*) as total FROM tourists`)
-      const totalTourists = totalResult[0].total
-
-      // Calculate growth rate for each month
+      `);
+  
+      // ✅ Step 4: Get total count
+      const [totalResult] = await db.query("SELECT COUNT(*) AS total FROM tourists");
+      const totalTourists = totalResult[0].total || 0;
+  
+      // ✅ Step 5: Compute growth rate & deltas
       const monthlyDataWithGrowth = monthlyData.map((item, index) => {
-        const prevCount = index > 0 ? monthlyData[index - 1].count : 0
-        const growthRate = index === 0 ? 0 : 
-          prevCount > 0 ? ((item.count - prevCount) / prevCount * 100) : 0
-        
+        const prev = monthlyData[index - 1]?.count || 0;
+        const change = item.count - prev;
+        const growthRate = prev > 0 ? ((change / prev) * 100).toFixed(2) : 0;
+  
         return {
-          ...item,
-          growthRate: Math.round(growthRate * 100) / 100,
-          change: item.count - prevCount
-        }
-      })
-
-      res.json({
+          month: item.month_label,
+          count: item.count,
+          change,
+          growthRate: Number(growthRate),
+        };
+      });
+  
+      // ✅ Step 6: Handle empty result
+      if (monthlyDataWithGrowth.length === 0) {
+        return res.json({
+          success: true,
+          message: "No recent tourist records found in the last 12 months",
+          monthlyData: [],
+          totalTourists,
+        });
+      }
+  
+      // ✅ Step 7: Success response
+      return res.json({
+        success: true,
+        message: "Monthly chart data fetched successfully",
         monthlyData: monthlyDataWithGrowth,
         totalTourists,
-        period: "Last 12 months"
-      })
+        period: "Last 12 months",
+      });
     } catch (error) {
-      console.error("Get monthly chart data error:", error)
-      res.status(500).json({ error: "Server error", details: error.message })
+      console.error("❌ Error in getMonthlyChartData:", error);
+      res.status(500).json({
+        success: false,
+        error: "Server error",
+        details: process.env.NODE_ENV === "development" ? error.message : undefined,
+      });
     }
   },
 };

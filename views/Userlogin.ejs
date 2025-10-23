@@ -244,6 +244,156 @@
         </div>
     </div>
 
+    <!-- Success Message Modal -->
+    <div id="success-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
+            <!-- Success Header -->
+            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-medium text-white">Email Sent Successfully!</h3>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Success Body -->
+            <div class="px-6 py-4">
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                        <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-2">Password Reset Code Sent</h4>
+                    <p class="text-sm text-gray-600 mb-4">
+                        We've sent a 6-digit reset code to your email address. Please check your inbox and spam folder.
+                    </p>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                        <p class="text-xs text-blue-800">
+                            <strong>Note:</strong> The reset code will expire in 15 minutes for security reasons.
+                        </p>
+                    </div>
+                    <div id="debug-code-container" class="hidden bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                        <p class="text-xs text-yellow-800">
+                            <strong>Debug Code:</strong> <span id="debug-code-text" class="font-mono font-bold"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Success Footer -->
+            <div class="bg-gray-50 px-6 py-3 flex justify-end">
+                <button id="success-ok-btn" 
+                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200">
+                    Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Message Modal -->
+    <div id="error-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
+            <!-- Error Header -->
+            <div class="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-medium text-white">Email Sending Failed</h3>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Error Body -->
+            <div class="px-6 py-4">
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                        <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-2">Unable to Send Email</h4>
+                    <p id="error-message" class="text-sm text-gray-600 mb-4">
+                        There was an error sending the reset code to your email address.
+                    </p>
+                    <div id="debug-code-error-container" class="hidden bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                        <p class="text-xs text-yellow-800">
+                            <strong>For testing purposes, use this code:</strong> <span id="debug-code-error-text" class="font-mono font-bold"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Error Footer -->
+            <div class="bg-gray-50 px-6 py-3 flex justify-end space-x-3">
+                <button id="error-retry-btn" 
+                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+                    Try Again
+                </button>
+                <button id="error-close-btn" 
+                        class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 transition duration-200">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Reset Success Modal -->
+    <div id="password-reset-success-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 hidden z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
+            <!-- Success Header -->
+            <div class="bg-gradient-to-r from-green-500 to-green-600 px-6 py-4">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <svg class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-lg font-medium text-white">Password Reset Successful!</h3>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Success Body -->
+            <div class="px-6 py-4">
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                        <svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-medium text-gray-900 mb-2">Password Updated Successfully</h4>
+                    <p id="password-reset-message" class="text-sm text-gray-600 mb-4">
+                        Your password has been reset successfully. You can now log in with your new password.
+                    </p>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                        <p class="text-xs text-blue-800">
+                            <strong>Next Step:</strong> Please log in with your new password to access your account.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Success Footer -->
+            <div class="bg-gray-50 px-6 py-3 flex justify-center">
+                <button id="password-reset-ok-btn" 
+                        class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200">
+                    Go to Login
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Suspension Modal -->
     <div id="suspension-modal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 suspension-modal hidden">
         <div class="suspension-modal-content">
@@ -418,6 +568,64 @@
             const newPasswordInput = document.getElementById('new-password');
         
             let savedEmail = ''; // to remember email across steps
+
+            // Modal functions
+            function showSuccessModal(data) {
+                const successModal = document.getElementById('success-modal');
+                const debugContainer = document.getElementById('debug-code-container');
+                const debugText = document.getElementById('debug-code-text');
+                
+                // Show debug code if email wasn't sent but we have a debug code
+                if (data.debug_code && !data.email_sent) {
+                    debugContainer.classList.remove('hidden');
+                    debugText.textContent = data.debug_code;
+                } else {
+                    debugContainer.classList.add('hidden');
+                }
+                
+                successModal.classList.remove('hidden');
+            }
+
+            function showErrorModal(message) {
+                const errorModal = document.getElementById('error-modal');
+                const errorMessage = document.getElementById('error-message');
+                const debugContainer = document.getElementById('debug-code-error-container');
+                const debugText = document.getElementById('debug-code-error-text');
+                
+                errorMessage.textContent = message;
+                
+                // Show debug code if available
+                if (message.includes('debug_code') || message.includes('testing purposes')) {
+                    const codeMatch = message.match(/code: (\d{6})/);
+                    if (codeMatch) {
+                        debugContainer.classList.remove('hidden');
+                        debugText.textContent = codeMatch[1];
+                    }
+                } else {
+                    debugContainer.classList.add('hidden');
+                }
+                
+                errorModal.classList.remove('hidden');
+            }
+
+            function hideSuccessModal() {
+                document.getElementById('success-modal').classList.add('hidden');
+            }
+
+            function hideErrorModal() {
+                document.getElementById('error-modal').classList.add('hidden');
+            }
+
+            function showPasswordResetSuccessModal(message) {
+                const modal = document.getElementById('password-reset-success-modal');
+                const messageElement = document.getElementById('password-reset-message');
+                messageElement.textContent = message;
+                modal.classList.remove('hidden');
+            }
+
+            function hidePasswordResetSuccessModal() {
+                document.getElementById('password-reset-success-modal').classList.add('hidden');
+            }
         
             // Open Modal
             openLink.addEventListener('click', function (e) {
@@ -430,6 +638,47 @@
             // Close Modal
             closeBtn.addEventListener('click', function () {
                 modal.classList.add('hidden');
+            });
+
+            // Success Modal Event Listeners
+            document.getElementById('success-ok-btn').addEventListener('click', function() {
+                hideSuccessModal();
+            });
+
+            // Error Modal Event Listeners
+            document.getElementById('error-retry-btn').addEventListener('click', function() {
+                hideErrorModal();
+                // Re-trigger the send code functionality
+                sendCodeBtn.click();
+            });
+
+            document.getElementById('error-close-btn').addEventListener('click', function() {
+                hideErrorModal();
+            });
+
+            // Close modals when clicking outside
+            document.getElementById('success-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideSuccessModal();
+                }
+            });
+
+            document.getElementById('error-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hideErrorModal();
+                }
+            });
+
+            // Password Reset Success Modal Event Listener
+            document.getElementById('password-reset-ok-btn').addEventListener('click', function() {
+                hidePasswordResetSuccessModal();
+            });
+
+            // Close password reset success modal when clicking outside
+            document.getElementById('password-reset-success-modal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    hidePasswordResetSuccessModal();
+                }
             });
         
             // Send Code
@@ -464,24 +713,19 @@
                 })
                 .then(data => {
                     if (data.success || data.message) {
-                        let message = data.message || "Reset code sent successfully!";
-                        
-                        // If email wasn't sent but we have a debug code, show it
-                        if (data.debug_code && !data.email_sent) {
-                            message += `\n\nFor testing purposes, use this code: ${data.debug_code}`;
-                        }
-                        
-                        alert(message);
+                        // Show success modal
+                        showSuccessModal(data);
                         savedEmail = email;
                         stepEmail.classList.add('hidden');
                         stepReset.classList.remove('hidden');
                     } else {
-                        alert(data.message || "Failed to send reset code. Please try again.");
+                        // Show error modal
+                        showErrorModal(data.message || "Failed to send reset code. Please try again.");
                     }
                 })
                 .catch(err => {
                     console.error('Send code error:', err);
-                    alert("Failed to send reset code. Please check your internet connection and try again.");
+                    showErrorModal("Failed to send reset code. Please check your internet connection and try again.");
                 })
                 .finally(() => {
                     // Re-enable button
@@ -549,7 +793,8 @@
                     return res.json();
                 })
                 .then(data => {
-                    alert(data.message || "Password reset successfully!");
+                    // Show success modal for password reset
+                    showPasswordResetSuccessModal(data.message || "Password reset successfully!");
                     modal.classList.add('hidden');
                     // Reset form
                     emailInput.value = '';
@@ -560,7 +805,7 @@
                 })
                 .catch(err => {
                     console.error('Reset password error:', err);
-                    alert(err.message || "Failed to reset password. Please try again.");
+                    showErrorModal(err.message || "Failed to reset password. Please try again.");
                 })
                 .finally(() => {
                     // Re-enable button

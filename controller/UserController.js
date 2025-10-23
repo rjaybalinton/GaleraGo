@@ -353,8 +353,8 @@ const UserController = {
       console.log("✅ Reset code updated in database")
 
       // Check if email credentials are configured
-      const emailUser = process.env.EMAIL_USER || "rjaybalinton833@gmail.com"
-      const emailPass = process.env.EMAIL_PASS || "zwmi zdfr bkao ddso"
+      const emailUser = process.env.EMAIL_USER || "jhay45620@gmail.com"
+      const emailPass = process.env.EMAIL_PASS || "rjaybalinton26"
       const isRender = process.env.RENDER
       const isProduction = process.env.NODE_ENV === 'production' || isRender
 
@@ -411,8 +411,8 @@ const UserController = {
         try {
           console.log("🔄 Trying SMTP fallback...")
           
-          const emailUser = process.env.EMAIL_USER || "rjaybalinton833@gmail.com"
-          const emailPass = process.env.EMAIL_PASS || "zwmi zdfr bkao ddso"
+          const emailUser = process.env.EMAIL_USER || "jhay45620@gmail.com"
+          const emailPass = process.env.EMAIL_PASS || "basi bdph upbm cjmo"
           const isRender = process.env.RENDER
           const isProduction = process.env.NODE_ENV === 'production' || isRender
 
